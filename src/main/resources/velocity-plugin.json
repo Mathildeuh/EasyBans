@@ -1,0 +1,16 @@
+{
+  "id": "easybans",
+  "name": "EasyBans",
+  "version": "${version}",
+  "description": "Moderation plugin for Velocity: bans, mutes, warnings, kicks, notes, templates, i18n.",
+  "main": "fr.mathilde.easybans.EasyBans",
+  "authors": [
+    "Mathildeuh"
+  ],
+  "dependencies": [
+    {
+      "id": "signedvelocity",
+      "optional": true
+    }
+  ]
+}

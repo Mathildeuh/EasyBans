@@ -1,0 +1,143 @@
+# =====================================================================
+#  EasyBans - сообщения на русском языке
+#  Все значения в формате MiniMessage. Набор ключей должен быть одинаковым во всех
+#  языковых файлах - см. messages_en.yml и CONFIG.md.
+# =====================================================================
+
+common:
+  permanent: "Навсегда"
+  status-active: "Активно"
+  status-inactive: "Неактивно"
+
+errors:
+  no-permission: "<red>У вас нет разрешения на это действие."
+  player-not-found: "<red>Игрок '<player>' не найден."
+  target-exempt: "<red>Этот игрок защищён от наказаний."
+  players-only: "<red>Эту команду может использовать только игрок."
+  unknown-server: "<red>Неизвестный сервер."
+  player-never-joined: "<red>Этот игрок никогда не заходил - IP не зарегистрирован."
+  already-banned: "<red>У <player> уже есть активный бан. Требуется разрешение easybans.override, чтобы заменить его."
+  already-muted: "<red>У <player> уже есть активный мут. Требуется разрешение easybans.override, чтобы заменить его."
+  template-not-found: "<red>Неизвестный шаблон наказания."
+  template-wrong-type: "<red>Этот шаблон не настроен для данного типа наказания."
+  player-not-online: "<red><player> не в сети."
+  not-banned: "<red><player> сейчас не забанен."
+  not-muted: "<red><player> сейчас не в муте."
+  unknown-category: "<red>Неизвестная категория предупреждения: <category>"
+
+notify:
+  warning-received: "<yellow>Вы получили предупреждение, пока были не в сети: <white><reason></white> <yellow>(<category>) - выдано <white><staff>"
+  linked-account: "<yellow><player> <gray>подключился с того же IP, что и забаненный аккаунт <white><linked_player></white> <gray>(<ip>)"
+
+kickscreen:
+  ban:
+    - "<gradient:#ff0000:#8b0000><bold>ВЫ ЗАБАНЕНЫ</bold></gradient>"
+    - ""
+    - "<gray>Причина: <white><reason>"
+    - "<gray>Срок: <white><duration>"
+    - "<gray>Модератор: <white><staff>"
+    - "<gray>Дата: <white><original_date>"
+    - ""
+    - "<hover:show_text:'<gray>ID бана</gray>'><yellow>Считаете это ошибкой? Обратитесь в поддержку с ID <white>#<id></hover>"
+  ban-ip:
+    - "<gradient:#ff0000:#8b0000><bold>ВАШ IP ЗАБАНЕН</bold></gradient>"
+    - ""
+    - "<gray>Причина: <white><reason>"
+    - "<gray>Срок: <white><duration>"
+    - "<gray>Дата: <white><original_date>"
+  kick:
+    - "<gradient:#ffaa00:#ff5500><bold>ВЫ БЫЛИ ИСКЛЮЧЕНЫ</bold></gradient>"
+    - ""
+    - "<gray>Причина: <white><reason>"
+    - "<gray>Модератор: <white><staff>"
+  template:
+    cheating:
+      final:
+        - "<gradient:#8b0000:#1a0000><bold>ЗАБАНЕН НАВСЕГДА</bold></gradient>"
+        - ""
+        - "<gray>Причина: <white><reason>"
+        - "<red>Это повторное нарушение по шаблону 'cheating'."
+        - "<gray>Модератор: <white><staff>"
+
+commands:
+  default-reason: "Причина не указана."
+
+  ban:
+    usage: "<red>Использование: /ban <игрок> <срок|причина...> [-s] [-server:<имя>] [-t:<шаблон>]"
+    success: "<green>Игрок <yellow><player></yellow> забанен за <white><reason></white> (<white><duration></white>)."
+    broadcast: "<dark_red><player> <gray>был забанен модератором <white><staff> <gray>(<white><reason></white>)"
+
+  banip:
+    usage: "<red>Использование: /banip <игрок> <срок|причина...> [-s] [-server:<имя>]"
+    success: "<green>IP игрока <yellow><player></yellow> забанен за <white><reason></white> (<white><duration></white>)."
+    broadcast: "<dark_red><player> <gray>был забанен по IP модератором <white><staff> <gray>(<white><reason></white>)"
+
+  unban:
+    usage: "<red>Использование: /unban <игрок> [причина...]"
+    success: "<green>С игрока <yellow><player></yellow> снят бан."
+
+  mute:
+    usage: "<red>Использование: /mute <игрок> <срок|причина...> [-s] [-server:<имя>] [-t:<шаблон>]"
+    success: "<green>Игрок <yellow><player></yellow> замучен за <white><reason></white> (<white><duration></white>)."
+    broadcast: "<gold><player> <gray>был замучен модератором <white><staff> <gray>(<white><reason></white>)"
+    notice: "<red>Вы сейчас в муте: <white><reason></white> <red>(осталось <white><duration></white>)"
+
+  unmute:
+    usage: "<red>Использование: /unmute <игрок> [причина...]"
+    success: "<green>С игрока <yellow><player></yellow> снят мут."
+
+  warn:
+    usage: "<red>Использование: /warn <игрок> <категория> <причина...>"
+    success: "<green>Игрок <yellow><player></yellow> предупреждён (<white><category></white>): <white><reason>"
+    broadcast: "<yellow><player> <gray>получил предупреждение от <white><staff> <gray>(<white><reason></white>)"
+
+  kick:
+    usage: "<red>Использование: /kick <игрок> <причина...> [-server:<имя>]"
+    success: "<green>Игрок <yellow><player></yellow> исключён: <white><reason>"
+    broadcast: "<light_purple><player> <gray>был исключён модератором <white><staff> <gray>(<white><reason></white>)"
+
+  note:
+    usage: "<red>Использование: /note <игрок> <заметка...>"
+    success: "<green>Заметка добавлена для <yellow><player></yellow>."
+
+  history:
+    usage: "<red>Использование: /history <игрок> [страница]"
+    header: "<gold>История <white><player></white> <gray>(страница <white><page></white>/<white><total_pages></white>, всего <white><total></white>)"
+    entry: "<gray>[<white><type></white>#<id>] <white><reason> <gray>- от <white><staff> <gray>дата <white><date> <gray>(<status>)"
+
+  staffhistory:
+    usage: "<red>Использование: /staffhistory <модератор> [страница]"
+    header: "<gold>Наказания, выданные <white><staff></white> <gray>(страница <white><page></white>/<white><total_pages></white>, всего <white><total></white>)"
+
+  easybans:
+    version: "<gray>Версия EasyBans: <white><version>"
+    help: "<gold>EasyBans</gold> <gray>- /ban /banip /unban /mute /unmute /warn /kick /note /history /staffhistory\n<gray>Админ: /easybans <allow|rollback|import|language|template|reload|version>"
+
+    allow:
+      usage: "<red>Использование: /easybans allow <игрок> <ip>"
+      success: "<green><player> теперь освобождён от IP-банов на <white><ip>"
+      already: "<yellow><player> уже освобождён на <white><ip>"
+
+    rollback:
+      usage: "<red>Использование: /easybans rollback <модератор|confirm>"
+      no-pending: "<red>Нет ожидающего подтверждения отката (или истёк срок)."
+      done: "<green>Отменено наказаний: <white><count></white>."
+      confirm-prompt: "<yellow>Это отменит все активные наказания, выданные <white><staff></white>. Выполните <white>/easybans rollback confirm</white> в течение 30 секунд для подтверждения."
+
+    import:
+      usage: "<red>Использование: /easybans import <источник> <путь|jdbc-url>"
+      unknown-source: "<red>Неизвестный источник импорта: <source>"
+      started: "<gray>Начат импорт из <white><source></white>..."
+      report: "<green>Импорт завершён: <white><imported></white> импортировано, <white><skipped></white> пропущено (дубликаты), <white><errors></white> ошибок."
+      failed: "<red>Ошибка импорта: <error>"
+
+    language:
+      usage: "<red>Использование: /easybans language <код>"
+      success: "<green>Ваш язык теперь <white><locale>"
+      unsupported: "<red>Неподдерживаемый код языка: <locale>"
+
+    template:
+      list: "<gray>Шаблоны наказаний: <white><templates></white> <gray>| Категории предупреждений: <white><categories>"
+
+    reload:
+      success: "<green>Конфигурация перезагружена (сообщения и шаблоны)."

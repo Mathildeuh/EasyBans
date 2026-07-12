@@ -1,0 +1,143 @@
+# =====================================================================
+#  EasyBans - deutsche Nachrichten
+#  Alle Werte sind MiniMessage. Der Schlüsselsatz muss in jeder Sprachdatei identisch
+#  sein - siehe messages_en.yml und CONFIG.md.
+# =====================================================================
+
+common:
+  permanent: "Permanent"
+  status-active: "Aktiv"
+  status-inactive: "Inaktiv"
+
+errors:
+  no-permission: "<red>Du hast keine Berechtigung dafür."
+  player-not-found: "<red>Spieler '<player>' wurde nicht gefunden."
+  target-exempt: "<red>Dieser Spieler ist von Strafen ausgenommen."
+  players-only: "<red>Dieser Befehl kann nur von Spielern verwendet werden."
+  unknown-server: "<red>Unbekannter Server."
+  player-never-joined: "<red>Dieser Spieler war noch nie online - keine IP hinterlegt."
+  already-banned: "<red><player> hat bereits eine aktive Sperre. easybans.override wird benötigt, um sie zu ersetzen."
+  already-muted: "<red><player> ist bereits aktiv stummgeschaltet. easybans.override wird benötigt, um dies zu ersetzen."
+  template-not-found: "<red>Unbekanntes Straf-Template."
+  template-wrong-type: "<red>Dieses Template ist nicht für diesen Straftyp konfiguriert."
+  player-not-online: "<red><player> ist nicht online."
+  not-banned: "<red><player> ist aktuell nicht gesperrt."
+  not-muted: "<red><player> ist aktuell nicht stummgeschaltet."
+  unknown-category: "<red>Unbekannte Verwarnungskategorie: <category>"
+
+notify:
+  warning-received: "<yellow>Du hast eine Verwarnung erhalten, während du offline warst: <white><reason></white> <yellow>(<category>) - erteilt von <white><staff>"
+  linked-account: "<yellow><player> <gray>hat sich gerade mit derselben IP wie das gesperrte Konto <white><linked_player></white> <gray>verbunden (<ip>)"
+
+kickscreen:
+  ban:
+    - "<gradient:#ff0000:#8b0000><bold>DU WURDEST GESPERRT</bold></gradient>"
+    - ""
+    - "<gray>Grund: <white><reason>"
+    - "<gray>Dauer: <white><duration>"
+    - "<gray>Team: <white><staff>"
+    - "<gray>Datum: <white><original_date>"
+    - ""
+    - "<hover:show_text:'<gray>Sperr-ID</gray>'><yellow>Denkst du, das ist ein Fehler? Kontaktiere das Team mit der ID <white>#<id></hover>"
+  ban-ip:
+    - "<gradient:#ff0000:#8b0000><bold>DEINE IP WURDE GESPERRT</bold></gradient>"
+    - ""
+    - "<gray>Grund: <white><reason>"
+    - "<gray>Dauer: <white><duration>"
+    - "<gray>Datum: <white><original_date>"
+  kick:
+    - "<gradient:#ffaa00:#ff5500><bold>DU WURDEST GEKICKT</bold></gradient>"
+    - ""
+    - "<gray>Grund: <white><reason>"
+    - "<gray>Team: <white><staff>"
+  template:
+    cheating:
+      final:
+        - "<gradient:#8b0000:#1a0000><bold>DAUERHAFT GESPERRT</bold></gradient>"
+        - ""
+        - "<gray>Grund: <white><reason>"
+        - "<red>Dies ist ein wiederholter Verstoß im Template 'cheating'."
+        - "<gray>Team: <white><staff>"
+
+commands:
+  default-reason: "Kein Grund angegeben."
+
+  ban:
+    usage: "<red>Verwendung: /ban <spieler> <dauer|grund...> [-s] [-server:<name>] [-t:<template>]"
+    success: "<green><yellow><player></yellow> gesperrt für <white><reason></white> (<white><duration></white>)."
+    broadcast: "<dark_red><player> <gray>wurde von <white><staff> <gray>gesperrt (<white><reason></white>)"
+
+  banip:
+    usage: "<red>Verwendung: /banip <spieler> <dauer|grund...> [-s] [-server:<name>]"
+    success: "<green>IP von <yellow><player></yellow> gesperrt für <white><reason></white> (<white><duration></white>)."
+    broadcast: "<dark_red><player> <gray>wurde per IP von <white><staff> <gray>gesperrt (<white><reason></white>)"
+
+  unban:
+    usage: "<red>Verwendung: /unban <spieler> [grund...]"
+    success: "<green><yellow><player></yellow> entsperrt."
+
+  mute:
+    usage: "<red>Verwendung: /mute <spieler> <dauer|grund...> [-s] [-server:<name>] [-t:<template>]"
+    success: "<green><yellow><player></yellow> stummgeschaltet für <white><reason></white> (<white><duration></white>)."
+    broadcast: "<gold><player> <gray>wurde von <white><staff> <gray>stummgeschaltet (<white><reason></white>)"
+    notice: "<red>Du bist aktuell stummgeschaltet: <white><reason></white> <red>(<white><duration></white> <red>verbleibend)"
+
+  unmute:
+    usage: "<red>Verwendung: /unmute <spieler> [grund...]"
+    success: "<green>Stummschaltung von <yellow><player></yellow> aufgehoben."
+
+  warn:
+    usage: "<red>Verwendung: /warn <spieler> <kategorie> <grund...>"
+    success: "<green><yellow><player></yellow> verwarnt (<white><category></white>): <white><reason>"
+    broadcast: "<yellow><player> <gray>wurde von <white><staff> <gray>verwarnt (<white><reason></white>)"
+
+  kick:
+    usage: "<red>Verwendung: /kick <spieler> <grund...> [-server:<name>]"
+    success: "<green><yellow><player></yellow> gekickt: <white><reason>"
+    broadcast: "<light_purple><player> <gray>wurde von <white><staff> <gray>gekickt (<white><reason></white>)"
+
+  note:
+    usage: "<red>Verwendung: /note <spieler> <notiz...>"
+    success: "<green>Notiz für <yellow><player></yellow> hinzugefügt."
+
+  history:
+    usage: "<red>Verwendung: /history <spieler> [seite]"
+    header: "<gold>Verlauf von <white><player></white> <gray>(Seite <white><page></white>/<white><total_pages></white>, <white><total></white> insgesamt)"
+    entry: "<gray>[<white><type></white>#<id>] <white><reason> <gray>- von <white><staff> <gray>am <white><date> <gray>(<status>)"
+
+  staffhistory:
+    usage: "<red>Verwendung: /staffhistory <team> [seite]"
+    header: "<gold>Strafen erteilt von <white><staff></white> <gray>(Seite <white><page></white>/<white><total_pages></white>, <white><total></white> insgesamt)"
+
+  easybans:
+    version: "<gray>EasyBans Version <white><version>"
+    help: "<gold>EasyBans</gold> <gray>- /ban /banip /unban /mute /unmute /warn /kick /note /history /staffhistory\n<gray>Admin: /easybans <allow|rollback|import|language|template|reload|version>"
+
+    allow:
+      usage: "<red>Verwendung: /easybans allow <spieler> <ip>"
+      success: "<green><player> ist nun von IP-Sperren auf <white><ip> <green>ausgenommen"
+      already: "<yellow><player> ist bereits ausgenommen auf <white><ip>"
+
+    rollback:
+      usage: "<red>Verwendung: /easybans rollback <team|confirm>"
+      no-pending: "<red>Kein ausstehendes Rollback zu bestätigen (oder es ist abgelaufen)."
+      done: "<green><white><count></white> Strafe(n) zurückgesetzt."
+      confirm-prompt: "<yellow>Dies entfernt alle aktiven Strafen von <white><staff></white>. Führe <white>/easybans rollback confirm</white> innerhalb von 30 Sekunden aus, um zu bestätigen."
+
+    import:
+      usage: "<red>Verwendung: /easybans import <source> <pfad|jdbc-url>"
+      unknown-source: "<red>Unbekannte Import-Quelle: <source>"
+      started: "<gray>Import von <white><source></white> gestartet..."
+      report: "<green>Import abgeschlossen: <white><imported></white> importiert, <white><skipped></white> übersprungen (Duplikate), <white><errors></white> Fehler."
+      failed: "<red>Import fehlgeschlagen: <error>"
+
+    language:
+      usage: "<red>Verwendung: /easybans language <code>"
+      success: "<green>Deine Sprache ist jetzt <white><locale>"
+      unsupported: "<red>Nicht unterstützter Sprachcode: <locale>"
+
+    template:
+      list: "<gray>Straf-Templates: <white><templates></white> <gray>| Verwarnungskategorien: <white><categories>"
+
+    reload:
+      success: "<green>Konfiguration neu geladen (Nachrichten und Templates)."

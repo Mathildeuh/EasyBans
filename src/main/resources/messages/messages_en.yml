@@ -1,0 +1,149 @@
+# =====================================================================
+#  EasyBans - English messages (fallback language for every other locale)
+#
+#  Every value is MiniMessage (https://docs.advntr.dev/minimessage/format.html) - no legacy
+#  "&" color codes. Dynamic values like <reason> or <staff> are inserted as literal text
+#  (never re-parsed as MiniMessage), so a punishment reason can never inject formatting.
+#
+#  Every locale file under this folder MUST have the exact same set of keys as this one -
+#  a unit test enforces that. See CONFIG.md for the list of placeholders available per key
+#  and the guide for adding a new language.
+# =====================================================================
+
+common:
+  permanent: "Permanent"
+  status-active: "Active"
+  status-inactive: "Inactive"
+
+errors:
+  no-permission: "<red>You do not have permission to do that."
+  player-not-found: "<red>Player '<player>' could not be found."
+  target-exempt: "<red>This player is exempt from punishments."
+  players-only: "<red>This command can only be used by players."
+  unknown-server: "<red>Unknown server."
+  player-never-joined: "<red>This player has never joined before - no IP on record to ban."
+  already-banned: "<red><player> already has an active ban. easybans.override is required to replace it."
+  already-muted: "<red><player> already has an active mute. easybans.override is required to replace it."
+  template-not-found: "<red>Unknown punishment template."
+  template-wrong-type: "<red>This template is not configured for this punishment type."
+  player-not-online: "<red><player> is not online."
+  not-banned: "<red><player> is not currently banned."
+  not-muted: "<red><player> is not currently muted."
+  unknown-category: "<red>Unknown warning category: <category>"
+
+notify:
+  warning-received: "<yellow>You received a warning while you were offline: <white><reason></white> <yellow>(<category>) - issued by <white><staff>"
+  linked-account: "<yellow><player> <gray>just connected sharing an IP with banned account <white><linked_player></white> <gray>(<ip>)"
+
+kickscreen:
+  ban:
+    - "<gradient:#ff0000:#8b0000><bold>YOU HAVE BEEN BANNED</bold></gradient>"
+    - ""
+    - "<gray>Reason: <white><reason>"
+    - "<gray>Duration: <white><duration>"
+    - "<gray>Staff: <white><staff>"
+    - "<gray>Date: <white><original_date>"
+    - ""
+    - "<hover:show_text:'<gray>Ban ID</gray>'><yellow>Think this is a mistake? Contact staff and provide ID <white>#<id></hover>"
+  ban-ip:
+    - "<gradient:#ff0000:#8b0000><bold>YOUR IP HAS BEEN BANNED</bold></gradient>"
+    - ""
+    - "<gray>Reason: <white><reason>"
+    - "<gray>Duration: <white><duration>"
+    - "<gray>Date: <white><original_date>"
+  kick:
+    - "<gradient:#ffaa00:#ff5500><bold>YOU HAVE BEEN KICKED</bold></gradient>"
+    - ""
+    - "<gray>Reason: <white><reason>"
+    - "<gray>Staff: <white><staff>"
+  template:
+    cheating:
+      final:
+        - "<gradient:#8b0000:#1a0000><bold>PERMANENTLY BANNED</bold></gradient>"
+        - ""
+        - "<gray>Reason: <white><reason>"
+        - "<red>This is a repeat offense on the 'cheating' template."
+        - "<gray>Staff: <white><staff>"
+
+commands:
+  default-reason: "No reason specified."
+
+  ban:
+    usage: "<red>Usage: /ban <player> <duration|reason...> [-s] [-server:<name>] [-t:<template>]"
+    success: "<green>Banned <yellow><player></yellow> for <white><reason></white> (<white><duration></white>)."
+    broadcast: "<dark_red><player> <gray>has been banned by <white><staff> <gray>(<white><reason></white>)"
+
+  banip:
+    usage: "<red>Usage: /banip <player> <duration|reason...> [-s] [-server:<name>]"
+    success: "<green>IP-banned <yellow><player></yellow> for <white><reason></white> (<white><duration></white>)."
+    broadcast: "<dark_red><player> <gray>has been IP-banned by <white><staff> <gray>(<white><reason></white>)"
+
+  unban:
+    usage: "<red>Usage: /unban <player> [reason...]"
+    success: "<green>Unbanned <yellow><player></yellow>."
+
+  mute:
+    usage: "<red>Usage: /mute <player> <duration|reason...> [-s] [-server:<name>] [-t:<template>]"
+    success: "<green>Muted <yellow><player></yellow> for <white><reason></white> (<white><duration></white>)."
+    broadcast: "<gold><player> <gray>has been muted by <white><staff> <gray>(<white><reason></white>)"
+    notice: "<red>You are currently muted: <white><reason></white> <red>(<white><duration></white> <red>remaining)"
+
+  unmute:
+    usage: "<red>Usage: /unmute <player> [reason...]"
+    success: "<green>Unmuted <yellow><player></yellow>."
+
+  warn:
+    usage: "<red>Usage: /warn <player> <category> <reason...>"
+    success: "<green>Warned <yellow><player></yellow> (<white><category></white>): <white><reason>"
+    broadcast: "<yellow><player> <gray>has been warned by <white><staff> <gray>(<white><reason></white>)"
+
+  kick:
+    usage: "<red>Usage: /kick <player> <reason...> [-server:<name>]"
+    success: "<green>Kicked <yellow><player></yellow>: <white><reason>"
+    broadcast: "<light_purple><player> <gray>has been kicked by <white><staff> <gray>(<white><reason></white>)"
+
+  note:
+    usage: "<red>Usage: /note <player> <note...>"
+    success: "<green>Note added for <yellow><player></yellow>."
+
+  history:
+    usage: "<red>Usage: /history <player> [page]"
+    header: "<gold>History for <white><player></white> <gray>(page <white><page></white>/<white><total_pages></white>, <white><total></white> total)"
+    entry: "<gray>[<white><type></white>#<id>] <white><reason> <gray>- by <white><staff> <gray>on <white><date> <gray>(<status>)"
+
+  staffhistory:
+    usage: "<red>Usage: /staffhistory <staff> [page]"
+    header: "<gold>Punishments issued by <white><staff></white> <gray>(page <white><page></white>/<white><total_pages></white>, <white><total></white> total)"
+
+  easybans:
+    version: "<gray>EasyBans version <white><version>"
+    help: "<gold>EasyBans</gold> <gray>- /ban /banip /unban /mute /unmute /warn /kick /note /history /staffhistory\n<gray>Admin: /easybans <allow|rollback|import|language|template|reload|version>"
+
+    allow:
+      usage: "<red>Usage: /easybans allow <player> <ip>"
+      success: "<green><player> is now exempt from IP bans on <white><ip>"
+      already: "<yellow><player> is already exempt on <white><ip>"
+
+    rollback:
+      usage: "<red>Usage: /easybans rollback <staff|confirm>"
+      no-pending: "<red>No pending rollback to confirm (or it expired)."
+      done: "<green>Rolled back <white><count></white> punishment(s)."
+      confirm-prompt: "<yellow>This will remove every active punishment issued by <white><staff></white>. Run <white>/easybans rollback confirm</white> within 30 seconds to proceed."
+
+    import:
+      usage: "<red>Usage: /easybans import <source> <path|jdbc-url>"
+      unknown-source: "<red>Unknown import source: <source>"
+      started: "<gray>Starting import from <white><source></white>..."
+      report: "<green>Import finished: <white><imported></white> imported, <white><skipped></white> skipped (duplicates), <white><errors></white> errors."
+      failed: "<red>Import failed: <error>"
+
+    language:
+      usage: "<red>Usage: /easybans language <code>"
+      success: "<green>Your language is now set to <white><locale>"
+      unsupported: "<red>Unsupported language code: <locale>"
+
+    template:
+      list: "<gray>Punishment templates: <white><templates></white> <gray>| Warning categories: <white><categories>"
+
+    reload:
+      success: "<green>Configuration reloaded (messages and templates)."

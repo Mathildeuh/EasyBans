@@ -1,0 +1,143 @@
+# =====================================================================
+#  EasyBans - messaggi in italiano
+#  Tutti i valori sono MiniMessage. L'insieme delle chiavi deve essere identico in ogni
+#  lingua - vedi messages_en.yml e CONFIG.md.
+# =====================================================================
+
+common:
+  permanent: "Permanente"
+  status-active: "Attivo"
+  status-inactive: "Inattivo"
+
+errors:
+  no-permission: "<red>Non hai il permesso di farlo."
+  player-not-found: "<red>Giocatore '<player>' non trovato."
+  target-exempt: "<red>Questo giocatore è esente da sanzioni."
+  players-only: "<red>Questo comando può essere usato solo dai giocatori."
+  unknown-server: "<red>Server sconosciuto."
+  player-never-joined: "<red>Questo giocatore non si è mai connesso - nessun IP registrato."
+  already-banned: "<red><player> ha già un ban attivo. È richiesto il permesso easybans.override per sostituirlo."
+  already-muted: "<red><player> ha già un mute attivo. È richiesto il permesso easybans.override per sostituirlo."
+  template-not-found: "<red>Template di sanzione sconosciuto."
+  template-wrong-type: "<red>Questo template non è configurato per questo tipo di sanzione."
+  player-not-online: "<red><player> non è online."
+  not-banned: "<red><player> non è attualmente bannato."
+  not-muted: "<red><player> non è attualmente silenziato."
+  unknown-category: "<red>Categoria di avvertimento sconosciuta: <category>"
+
+notify:
+  warning-received: "<yellow>Hai ricevuto un avvertimento mentre eri offline: <white><reason></white> <yellow>(<category>) - emesso da <white><staff>"
+  linked-account: "<yellow><player> <gray>si è appena connesso condividendo un IP con l'account bannato <white><linked_player></white> <gray>(<ip>)"
+
+kickscreen:
+  ban:
+    - "<gradient:#ff0000:#8b0000><bold>SEI STATO BANNATO</bold></gradient>"
+    - ""
+    - "<gray>Motivo: <white><reason>"
+    - "<gray>Durata: <white><duration>"
+    - "<gray>Staff: <white><staff>"
+    - "<gray>Data: <white><original_date>"
+    - ""
+    - "<hover:show_text:'<gray>ID ban</gray>'><yellow>Pensi sia un errore? Contatta lo staff con l'ID <white>#<id></hover>"
+  ban-ip:
+    - "<gradient:#ff0000:#8b0000><bold>IL TUO IP È STATO BANNATO</bold></gradient>"
+    - ""
+    - "<gray>Motivo: <white><reason>"
+    - "<gray>Durata: <white><duration>"
+    - "<gray>Data: <white><original_date>"
+  kick:
+    - "<gradient:#ffaa00:#ff5500><bold>SEI STATO ESPULSO</bold></gradient>"
+    - ""
+    - "<gray>Motivo: <white><reason>"
+    - "<gray>Staff: <white><staff>"
+  template:
+    cheating:
+      final:
+        - "<gradient:#8b0000:#1a0000><bold>BANNATO PERMANENTEMENTE</bold></gradient>"
+        - ""
+        - "<gray>Motivo: <white><reason>"
+        - "<red>Questa è una recidiva sul template 'cheating'."
+        - "<gray>Staff: <white><staff>"
+
+commands:
+  default-reason: "Nessun motivo specificato."
+
+  ban:
+    usage: "<red>Uso: /ban <giocatore> <durata|motivo...> [-s] [-server:<nome>] [-t:<template>]"
+    success: "<green>Bannato <yellow><player></yellow> per <white><reason></white> (<white><duration></white>)."
+    broadcast: "<dark_red><player> <gray>è stato bannato da <white><staff> <gray>(<white><reason></white>)"
+
+  banip:
+    usage: "<red>Uso: /banip <giocatore> <durata|motivo...> [-s] [-server:<nome>]"
+    success: "<green>IP bannato per <yellow><player></yellow> per <white><reason></white> (<white><duration></white>)."
+    broadcast: "<dark_red><player> <gray>è stato bannato per IP da <white><staff> <gray>(<white><reason></white>)"
+
+  unban:
+    usage: "<red>Uso: /unban <giocatore> [motivo...]"
+    success: "<green>Sbannato <yellow><player></yellow>."
+
+  mute:
+    usage: "<red>Uso: /mute <giocatore> <durata|motivo...> [-s] [-server:<nome>] [-t:<template>]"
+    success: "<green>Silenziato <yellow><player></yellow> per <white><reason></white> (<white><duration></white>)."
+    broadcast: "<gold><player> <gray>è stato silenziato da <white><staff> <gray>(<white><reason></white>)"
+    notice: "<red>Sei attualmente silenziato: <white><reason></white> <red>(<white><duration></white> <red>rimanenti)"
+
+  unmute:
+    usage: "<red>Uso: /unmute <giocatore> [motivo...]"
+    success: "<green>Rimosso il silenziamento di <yellow><player></yellow>."
+
+  warn:
+    usage: "<red>Uso: /warn <giocatore> <categoria> <motivo...>"
+    success: "<green>Avvertito <yellow><player></yellow> (<white><category></white>): <white><reason>"
+    broadcast: "<yellow><player> <gray>è stato avvertito da <white><staff> <gray>(<white><reason></white>)"
+
+  kick:
+    usage: "<red>Uso: /kick <giocatore> <motivo...> [-server:<nome>]"
+    success: "<green>Espulso <yellow><player></yellow>: <white><reason>"
+    broadcast: "<light_purple><player> <gray>è stato espulso da <white><staff> <gray>(<white><reason></white>)"
+
+  note:
+    usage: "<red>Uso: /note <giocatore> <nota...>"
+    success: "<green>Nota aggiunta per <yellow><player></yellow>."
+
+  history:
+    usage: "<red>Uso: /history <giocatore> [pagina]"
+    header: "<gold>Storico di <white><player></white> <gray>(pagina <white><page></white>/<white><total_pages></white>, <white><total></white> totali)"
+    entry: "<gray>[<white><type></white>#<id>] <white><reason> <gray>- da <white><staff> <gray>il <white><date> <gray>(<status>)"
+
+  staffhistory:
+    usage: "<red>Uso: /staffhistory <staff> [pagina]"
+    header: "<gold>Sanzioni inflitte da <white><staff></white> <gray>(pagina <white><page></white>/<white><total_pages></white>, <white><total></white> totali)"
+
+  easybans:
+    version: "<gray>EasyBans versione <white><version>"
+    help: "<gold>EasyBans</gold> <gray>- /ban /banip /unban /mute /unmute /warn /kick /note /history /staffhistory\n<gray>Admin: /easybans <allow|rollback|import|language|template|reload|version>"
+
+    allow:
+      usage: "<red>Uso: /easybans allow <giocatore> <ip>"
+      success: "<green><player> è ora esente dai ban IP su <white><ip>"
+      already: "<yellow><player> è già esente su <white><ip>"
+
+    rollback:
+      usage: "<red>Uso: /easybans rollback <staff|confirm>"
+      no-pending: "<red>Nessun rollback in sospeso da confermare (o è scaduto)."
+      done: "<green>Annullate <white><count></white> sanzione/i."
+      confirm-prompt: "<yellow>Questo rimuoverà tutte le sanzioni attive inflitte da <white><staff></white>. Esegui <white>/easybans rollback confirm</white> entro 30 secondi per confermare."
+
+    import:
+      usage: "<red>Uso: /easybans import <source> <percorso|url-jdbc>"
+      unknown-source: "<red>Fonte di importazione sconosciuta: <source>"
+      started: "<gray>Avvio importazione da <white><source></white>..."
+      report: "<green>Importazione completata: <white><imported></white> importati, <white><skipped></white> saltati (duplicati), <white><errors></white> errori."
+      failed: "<red>Importazione fallita: <error>"
+
+    language:
+      usage: "<red>Uso: /easybans language <codice>"
+      success: "<green>La tua lingua è ora <white><locale>"
+      unsupported: "<red>Codice lingua non supportato: <locale>"
+
+    template:
+      list: "<gray>Template di sanzione: <white><templates></white> <gray>| Categorie di avvertimento: <white><categories>"
+
+    reload:
+      success: "<green>Configurazione ricaricata (messaggi e template)."

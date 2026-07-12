@@ -1,0 +1,65 @@
+# =====================================================================
+#  EasyBans - templates de punition en echelle et categories de warning
+#  Documentation complete : CONFIG.md
+# =====================================================================
+
+# Un template de punition applique automatiquement une sanction dont la severite augmente
+# avec le nombre d'infractions precedentes du joueur pour CE template (compte via /ban ... -t:<id>).
+# "after" est le numero d'infraction (1 = premiere fois que ce template est applique a ce joueur).
+# Si le joueur depasse le dernier palier defini, le dernier palier est reapplique indefiniment.
+# duration: une duree ("3d", "12h", "30m"...) ou "permanent".
+# kickscreen (optionnel) : cle de message specifique a utiliser pour l'ecran de kick de ce palier,
+#   sous la forme "kickscreen.template.<id>.<index-du-palier>". A defaut, l'ecran de kick generique
+#   du type de punition (kickscreen.ban / kickscreen.mute) est utilise.
+punishment-templates:
+  cheating:
+    type: ban
+    stages:
+      - after: 1
+        duration: 3d
+        reason: "Cheating - 1st offense"
+      - after: 2
+        duration: 14d
+        reason: "Cheating - 2nd offense"
+      - after: 3
+        duration: permanent
+        reason: "Cheating - repeat offense"
+        # Resolves to the message key "kickscreen.template.cheating.final" (see messages_*.yml)
+        kickscreen: "cheating.final"
+
+  abusive-chat:
+    type: mute
+    stages:
+      - after: 1
+        duration: 1h
+        reason: "Abusive language - 1st offense"
+      - after: 2
+        duration: 12h
+        reason: "Abusive language - 2nd offense"
+      - after: 3
+        duration: 7d
+        reason: "Abusive language - repeat offense"
+
+# Les categories de warning declenchent automatiquement des commandes serveur quand un joueur
+# atteint un certain nombre de warnings dans la categorie. Les commandes sont executees depuis
+# la console proxy ; %player% est remplace par le pseudo du joueur.
+warning-categories:
+  spam:
+    display-name: "Spam"
+    thresholds:
+      - count: 3
+        commands:
+          - "mute %player% 1h Automatic mute: repeated spam warnings"
+      - count: 5
+        commands:
+          - "ban %player% 1d Automatic ban: repeated spam warnings"
+
+  toxicity:
+    display-name: "Toxicity"
+    thresholds:
+      - count: 3
+        commands:
+          - "mute %player% 6h Automatic mute: repeated toxicity warnings"
+      - count: 5
+        commands:
+          - "ban %player% 3d Automatic ban: repeated toxicity warnings"

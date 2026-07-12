@@ -1,0 +1,74 @@
+  # =====================================================================
+#  EasyBans - configuration principale
+#  Documentation complete : CONFIG.md
+# =====================================================================
+
+storage:
+  # h2 (par defaut, embarque, zero-config), mysql, mariadb ou postgresql
+  type: h2
+  host: localhost
+  port: 3306
+  database: easybans
+  username: easybans
+  password: ""
+  use-ssl: false
+  # Prefixe applique a toutes les tables creees par le plugin
+  table-prefix: "easybans_"
+  # Taille du pool de connexions HikariCP
+  pool-size: 10
+  connection-timeout-ms: 5000
+  # Nom du fichier H2 (sans extension), stocke dans le dossier de donnees du plugin
+  h2-file-name: easybans
+
+general:
+  # Active des logs supplementaires utiles au diagnostic
+  debug: false
+  # Portee par defaut d'une punition quand aucun flag -server:<nom> n'est fourni : "global" ou le nom d'un serveur
+  default-scope: global
+  # Annonce les punitions a tous les joueurs ayant la permission broadcast-permission
+  broadcast-punishments: true
+  broadcast-permission: "easybans.notify.broadcast"
+  # Deconnecte immediatement le joueur cible s'il est en ligne au moment d'un ban
+  kick-online-player-on-ban: true
+
+cache:
+  # Nombre maximum de pseudos hors-ligne conserves en cache memoire (eviction LRU au-dela)
+  offline-player-cache-size: 5000
+  uuid-cache-size: 5000
+
+locale:
+  # Langue utilisee si aucune autre resolution n'aboutit
+  default-locale: fr
+  # Si true, tente de deduire la langue du client a la premiere connexion (fallback sur default-locale)
+  auto-detect-locale: true
+  supported-locales: [fr, en, es, it, ru, ar, de]
+
+linked-accounts:
+  # Notifie les joueurs avec la permission easybans.notify.linked quand un compte partageant
+  # une IP avec un compte banni se connecte
+  notify-staff: true
+  # Bannit automatiquement les comptes partageant une IP avec un compte banni (desactive par defaut)
+  auto-ban: false
+
+sync:
+  # none, database (polling leger, aucune dependance externe) ou redis (pub/sub, quasi instantane)
+  mode: database
+  poll-interval-seconds: 3
+  redis:
+    host: localhost
+    port: 6379
+    password: ""
+    channel: "easybans:sync"
+
+discord:
+  enabled: false
+  webhook-url: ""
+  username: "EasyBans"
+  avatar-url: ""
+  events:
+    ban: true
+    unban: true
+    mute: true
+    unmute: true
+    warn: true
+    kick: true

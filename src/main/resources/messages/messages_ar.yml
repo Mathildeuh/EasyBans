@@ -1,0 +1,147 @@
+# =====================================================================
+#  EasyBans - الرسائل بالعربية
+#  جميع القيم بصيغة MiniMessage. يجب أن تكون مجموعة المفاتيح مطابقة تمامًا في كل ملفات
+#  اللغات - راجع messages_en.yml وCONFIG.md.
+#
+#  ملاحظة RTL: كل قيمة متغيرة (<reason>، <staff>، ...) موضوعة عمدًا في نهاية سطرها
+#  الخاص بعد النقطتين، بدلاً من منتصف جملة طويلة، لتفادي كسر اتجاه الكتابة عند عرض
+#  شاشة الطرد. عند إضافة قوالب جديدة، حافظ على هذا النمط (تسمية: قيمة) في كل سطر.
+# =====================================================================
+
+common:
+  permanent: "دائم"
+  status-active: "نشط"
+  status-inactive: "غير نشط"
+
+errors:
+  no-permission: "<red>ليس لديك صلاحية لفعل ذلك."
+  player-not-found: "<red>لم يتم العثور على اللاعب '<player>'."
+  target-exempt: "<red>هذا اللاعب معفى من العقوبات."
+  players-only: "<red>هذا الأمر مخصص للاعبين فقط."
+  unknown-server: "<red>خادم غير معروف."
+  player-never-joined: "<red>هذا اللاعب لم يدخل الخادم من قبل - لا يوجد IP مسجل."
+  already-banned: "<red><player> لديه بالفعل حظر نشط. صلاحية easybans.override مطلوبة لاستبداله."
+  already-muted: "<red><player> لديه بالفعل كتم نشط. صلاحية easybans.override مطلوبة لاستبداله."
+  template-not-found: "<red>قالب عقوبة غير معروف."
+  template-wrong-type: "<red>هذا القالب غير مُعد لهذا النوع من العقوبات."
+  player-not-online: "<red><player> غير متصل حاليًا."
+  not-banned: "<red><player> غير محظور حاليًا."
+  not-muted: "<red><player> غير مكتوم حاليًا."
+  unknown-category: "<red>فئة تحذير غير معروفة: <category>"
+
+notify:
+  warning-received: "<yellow>لقد تلقيت تحذيرًا أثناء عدم اتصالك: <white><reason></white> <yellow>(<category>) - صادر عن <white><staff>"
+  linked-account: "<yellow><player> <gray>اتصل للتو من نفس عنوان IP الخاص بالحساب المحظور <white><linked_player></white> <gray>(<ip>)"
+
+kickscreen:
+  ban:
+    - "<gradient:#ff0000:#8b0000><bold>تم حظرك</bold></gradient>"
+    - ""
+    - "<gray>السبب: <white><reason>"
+    - "<gray>المدة: <white><duration>"
+    - "<gray>الطاقم: <white><staff>"
+    - "<gray>التاريخ: <white><original_date>"
+    - ""
+    - "<hover:show_text:'<gray>معرف الحظر</gray>'><yellow>تعتقد أن هذا خطأ؟ تواصل مع الطاقم برقم المعرف <white>#<id></hover>"
+  ban-ip:
+    - "<gradient:#ff0000:#8b0000><bold>تم حظر عنوان IP الخاص بك</bold></gradient>"
+    - ""
+    - "<gray>السبب: <white><reason>"
+    - "<gray>المدة: <white><duration>"
+    - "<gray>التاريخ: <white><original_date>"
+  kick:
+    - "<gradient:#ffaa00:#ff5500><bold>تم طردك</bold></gradient>"
+    - ""
+    - "<gray>السبب: <white><reason>"
+    - "<gray>الطاقم: <white><staff>"
+  template:
+    cheating:
+      final:
+        - "<gradient:#8b0000:#1a0000><bold>محظور بشكل دائم</bold></gradient>"
+        - ""
+        - "<gray>السبب: <white><reason>"
+        - "<red>هذه مخالفة متكررة ضمن قالب 'cheating'."
+        - "<gray>الطاقم: <white><staff>"
+
+commands:
+  default-reason: "لم يتم تحديد سبب."
+
+  ban:
+    usage: "<red>الاستخدام: /ban <لاعب> <مدة|سبب...> [-s] [-server:<اسم>] [-t:<قالب>]"
+    success: "<green>تم حظر <yellow><player></yellow> بسبب <white><reason></white> (<white><duration></white>)."
+    broadcast: "<dark_red><player> <gray>تم حظره بواسطة <white><staff> <gray>(<white><reason></white>)"
+
+  banip:
+    usage: "<red>الاستخدام: /banip <لاعب> <مدة|سبب...> [-s] [-server:<اسم>]"
+    success: "<green>تم حظر IP الخاص بـ <yellow><player></yellow> بسبب <white><reason></white> (<white><duration></white>)."
+    broadcast: "<dark_red><player> <gray>تم حظر IP الخاص به بواسطة <white><staff> <gray>(<white><reason></white>)"
+
+  unban:
+    usage: "<red>الاستخدام: /unban <لاعب> [سبب...]"
+    success: "<green>تم رفع الحظر عن <yellow><player></yellow>."
+
+  mute:
+    usage: "<red>الاستخدام: /mute <لاعب> <مدة|سبب...> [-s] [-server:<اسم>] [-t:<قالب>]"
+    success: "<green>تم كتم <yellow><player></yellow> بسبب <white><reason></white> (<white><duration></white>)."
+    broadcast: "<gold><player> <gray>تم كتمه بواسطة <white><staff> <gray>(<white><reason></white>)"
+    notice: "<red>أنت مكتوم حاليًا: <white><reason></white> <red>(المتبقي <white><duration></white>)"
+
+  unmute:
+    usage: "<red>الاستخدام: /unmute <لاعب> [سبب...]"
+    success: "<green>تم رفع الكتم عن <yellow><player></yellow>."
+
+  warn:
+    usage: "<red>الاستخدام: /warn <لاعب> <فئة> <سبب...>"
+    success: "<green>تم تحذير <yellow><player></yellow> (<white><category></white>): <white><reason>"
+    broadcast: "<yellow><player> <gray>تم تحذيره بواسطة <white><staff> <gray>(<white><reason></white>)"
+
+  kick:
+    usage: "<red>الاستخدام: /kick <لاعب> <سبب...> [-server:<اسم>]"
+    success: "<green>تم طرد <yellow><player></yellow>: <white><reason>"
+    broadcast: "<light_purple><player> <gray>تم طرده بواسطة <white><staff> <gray>(<white><reason></white>)"
+
+  note:
+    usage: "<red>الاستخدام: /note <لاعب> <ملاحظة...>"
+    success: "<green>تمت إضافة ملاحظة لـ <yellow><player></yellow>."
+
+  history:
+    usage: "<red>الاستخدام: /history <لاعب> [صفحة]"
+    header: "<gold>سجل <white><player></white> <gray>(صفحة <white><page></white>/<white><total_pages></white>، الإجمالي <white><total></white>)"
+    entry: "<gray>[<white><type></white>#<id>] <white><reason> <gray>- بواسطة <white><staff> <gray>بتاريخ <white><date> <gray>(<status>)"
+
+  staffhistory:
+    usage: "<red>الاستخدام: /staffhistory <staff> [صفحة]"
+    header: "<gold>العقوبات الصادرة عن <white><staff></white> <gray>(صفحة <white><page></white>/<white><total_pages></white>، الإجمالي <white><total></white>)"
+
+  easybans:
+    version: "<gray>إصدار EasyBans: <white><version>"
+    help: "<gold>EasyBans</gold> <gray>- /ban /banip /unban /mute /unmute /warn /kick /note /history /staffhistory\n<gray>للإدارة: /easybans <allow|rollback|import|language|template|reload|version>"
+
+    allow:
+      usage: "<red>الاستخدام: /easybans allow <لاعب> <ip>"
+      success: "<green><player> أصبح الآن معفى من حظر IP على <white><ip>"
+      already: "<yellow><player> معفى بالفعل على <white><ip>"
+
+    rollback:
+      usage: "<red>الاستخدام: /easybans rollback <staff|confirm>"
+      no-pending: "<red>لا يوجد تراجع معلّق للتأكيد (أو انتهت صلاحيته)."
+      done: "<green>تم التراجع عن <white><count></white> عقوبة."
+      confirm-prompt: "<yellow>سيؤدي هذا إلى إزالة جميع العقوبات النشطة الصادرة عن <white><staff></white>. نفّذ <white>/easybans rollback confirm</white> خلال 30 ثانية للتأكيد."
+
+    import:
+      usage: "<red>الاستخدام: /easybans import <source> <مسار|jdbc-url>"
+      unknown-source: "<red>مصدر استيراد غير معروف: <source>"
+      started: "<gray>بدء الاستيراد من <white><source></white>..."
+      report: "<green>اكتمل الاستيراد: تم استيراد <white><imported></white>، تخطي <white><skipped></white> (مكرر)، <white><errors></white> أخطاء."
+      failed: "<red>فشل الاستيراد: <error>"
+
+    language:
+      usage: "<red>الاستخدام: /easybans language <code>"
+      success: "<green>لغتك الآن <white><locale>"
+      unsupported: "<red>رمز لغة غير مدعوم: <locale>"
+
+    template:
+      list: "<gray>قوالب العقوبات: <white><templates></white> <gray>| فئات التحذير: <white><categories>"
+
+    reload:
+      success: "<green>تمت إعادة تحميل الإعدادات (الرسائل والقوالب)."
