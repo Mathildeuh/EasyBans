@@ -25,7 +25,7 @@ public final class PunishmentFormatter {
 
     public static PlaceholderContext of(Punishment punishment, String serverName, MessageService messages,
                                          SupportedLocale locale) {
-        String permanent = messages.get(locale, "common.permanent").toString();
+        String permanent = messages.getPlain(locale, "common.permanent");
 
         PlaceholderContext ctx = PlaceholderContext.create()
                 .put("reason", punishment.reason())

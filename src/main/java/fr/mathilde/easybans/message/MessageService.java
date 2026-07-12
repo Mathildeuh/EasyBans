@@ -5,6 +5,7 @@ import fr.mathilde.easybans.locale.SupportedLocale;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.slf4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
@@ -99,6 +100,17 @@ public final class MessageService {
             return Component.text(key);
         }
         return miniMessage.deserialize(String.valueOf(raw), resolvers);
+    }
+
+    /**
+     * Same as {@link #get} but returns plain text (colors/formatting stripped) - for values
+     * that get embedded as a *placeholder* into another message (e.g. the default reason text
+     * plugged into {@code <reason>}) rather than sent directly. {@code Component#toString()} is
+     * never a substitute for this: it returns Adventure's debug representation of the component
+     * tree, not its rendered text.
+     */
+    public String getPlain(SupportedLocale locale, String key, TagResolver... resolvers) {
+        return PlainTextComponentSerializer.plainText().serialize(get(locale, key, resolvers));
     }
 
     /** For multi-line content (kick screens): a YAML list under the key becomes one Component per line. */

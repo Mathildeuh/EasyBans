@@ -24,6 +24,6 @@ public final class HistoryEntryFormatter {
                 .put("staff", punishment.staffName())
                 .put("reason", punishment.reason())
                 .put("date", DATE_FORMAT.format(punishment.createdAt()))
-                .put("status", messages.get(locale, statusKey).toString());
+                .put("status", messages.getPlain(locale, statusKey));
     }
 }

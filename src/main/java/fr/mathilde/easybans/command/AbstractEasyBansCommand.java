@@ -4,6 +4,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.cache.UuidResolver;
 import fr.mathilde.easybans.locale.LocaleService;
 import fr.mathilde.easybans.locale.SupportedLocale;
@@ -12,6 +13,7 @@ import fr.mathilde.easybans.message.PlaceholderContext;
 import fr.mathilde.easybans.punishment.PunishmentConstants;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -22,13 +24,20 @@ public abstract class AbstractEasyBansCommand implements SimpleCommand {
     protected final MessageService messages;
     protected final LocaleService localeService;
     protected final UuidResolver uuidResolver;
+    protected final OfflinePlayerCache offlinePlayerCache;
 
     protected AbstractEasyBansCommand(ProxyServer proxy, MessageService messages, LocaleService localeService,
-                                       UuidResolver uuidResolver) {
+                                       UuidResolver uuidResolver, OfflinePlayerCache offlinePlayerCache) {
         this.proxy = proxy;
         this.messages = messages;
         this.localeService = localeService;
         this.uuidResolver = uuidResolver;
+        this.offlinePlayerCache = offlinePlayerCache;
+    }
+
+    /** Online player names first, then cached offline names, prefix-matched. */
+    protected List<String> suggestPlayers(String prefix) {
+        return TabCompleteUtil.players(proxy, offlinePlayerCache, prefix);
     }
 
     protected SupportedLocale localeOf(CommandSource source) {

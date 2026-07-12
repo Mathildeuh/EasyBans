@@ -2,6 +2,7 @@ package fr.mathilde.easybans.command;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
+import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.cache.UuidResolver;
 import fr.mathilde.easybans.locale.LocaleService;
 import fr.mathilde.easybans.message.MessageService;
@@ -23,10 +24,10 @@ public final class WarnCommand extends AbstractEasyBansCommand {
     private final PunishmentBroadcaster broadcaster;
 
     public WarnCommand(ProxyServer proxy, MessageService messages, LocaleService localeService,
-                        UuidResolver uuidResolver, PunishmentService punishmentService,
-                        WarningTriggerService triggerService, TemplateRegistry templateRegistry,
-                        PunishmentBroadcaster broadcaster) {
-        super(proxy, messages, localeService, uuidResolver);
+                        UuidResolver uuidResolver, OfflinePlayerCache offlinePlayerCache,
+                        PunishmentService punishmentService, WarningTriggerService triggerService,
+                        TemplateRegistry templateRegistry, PunishmentBroadcaster broadcaster) {
+        super(proxy, messages, localeService, uuidResolver, offlinePlayerCache);
         this.punishmentService = punishmentService;
         this.triggerService = triggerService;
         this.templateRegistry = templateRegistry;
@@ -53,7 +54,7 @@ public final class WarnCommand extends AbstractEasyBansCommand {
         ParsedFlags flags = CommandArgs.parseFlags(args, 2);
         boolean silent = flags.silent() && source.hasPermission(Permissions.SILENT);
         String reason = flags.remaining().isEmpty()
-                ? messages.get(localeOf(source), "commands.default-reason").toString()
+                ? messages.getPlain(localeOf(source), "commands.default-reason")
                 : CommandArgs.joinFrom(flags.remaining(), 0);
 
         resolveTarget(source, targetName).thenAccept(uuidOpt -> uuidOpt.ifPresent(target -> {
@@ -77,6 +78,9 @@ public final class WarnCommand extends AbstractEasyBansCommand {
     @Override
     public List<String> suggest(Invocation invocation) {
         String[] args = invocation.arguments();
+        if (args.length <= 1) {
+            return suggestPlayers(args.length == 0 ? "" : args[0]);
+        }
         if (args.length == 2) {
             String prefix = args[1].toLowerCase();
             return templateRegistry.categoryIds().stream().filter(c -> c.startsWith(prefix)).collect(Collectors.toList());

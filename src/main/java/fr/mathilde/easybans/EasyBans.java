@@ -126,8 +126,8 @@ public class EasyBans {
 
         registerListeners(punishmentDao, ipExemptionDao, ipHistoryDao, playerDao, linkedAccountService,
                 offlinePlayerCache, activeMuteCache, messageService);
-        registerCommands(uuidResolver, punishmentService, historyService, rollbackService, warningTriggerService,
-                scopeResolver, broadcaster, ipExemptionDao);
+        registerCommands(uuidResolver, offlinePlayerCache, punishmentService, historyService, rollbackService,
+                warningTriggerService, scopeResolver, broadcaster, ipExemptionDao);
 
         logger.info("EasyBans enabled ({} storage, {} sync)", config.storage().type(), config.sync().mode());
     }
@@ -170,42 +170,45 @@ public class EasyBans {
         proxy.getEventManager().register(this, chatMuteListener);
     }
 
-    private void registerCommands(UuidResolver uuidResolver, PunishmentService punishmentService,
-                                   HistoryService historyService, RollbackService rollbackService,
-                                   WarningTriggerService warningTriggerService, ScopeResolver scopeResolver,
-                                   PunishmentBroadcaster broadcaster, IpExemptionDao ipExemptionDao) {
+    private void registerCommands(UuidResolver uuidResolver, OfflinePlayerCache offlinePlayerCache,
+                                   PunishmentService punishmentService, HistoryService historyService,
+                                   RollbackService rollbackService, WarningTriggerService warningTriggerService,
+                                   ScopeResolver scopeResolver, PunishmentBroadcaster broadcaster,
+                                   IpExemptionDao ipExemptionDao) {
         var commandManager = proxy.getCommandManager();
 
         commandManager.register(commandManager.metaBuilder("easybans").build(),
-                new EasyBansCommand(proxy, messageService, localeService, uuidResolver, ipExemptionDao,
-                        rollbackService, importService, templateRegistry, this::reload, pluginVersion()));
+                new EasyBansCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
+                        ipExemptionDao, rollbackService, importService, templateRegistry, this::reload, pluginVersion()));
 
         commandManager.register(commandManager.metaBuilder("ban").build(),
-                new BanCommand(proxy, messageService, localeService, uuidResolver, punishmentService, scopeResolver,
-                        broadcaster, false));
+                new BanCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
+                        punishmentService, scopeResolver, broadcaster, templateRegistry, false));
         commandManager.register(commandManager.metaBuilder("banip").build(),
-                new BanCommand(proxy, messageService, localeService, uuidResolver, punishmentService, scopeResolver,
-                        broadcaster, true));
+                new BanCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
+                        punishmentService, scopeResolver, broadcaster, templateRegistry, true));
         commandManager.register(commandManager.metaBuilder("unban").build(),
-                new UnbanCommand(proxy, messageService, localeService, uuidResolver, punishmentService));
+                new UnbanCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, punishmentService));
 
         commandManager.register(commandManager.metaBuilder("mute").build(),
-                new MuteCommand(proxy, messageService, localeService, uuidResolver, punishmentService, scopeResolver, broadcaster));
+                new MuteCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
+                        punishmentService, scopeResolver, broadcaster, templateRegistry));
         commandManager.register(commandManager.metaBuilder("unmute").build(),
-                new UnmuteCommand(proxy, messageService, localeService, uuidResolver, punishmentService));
+                new UnmuteCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, punishmentService));
 
         commandManager.register(commandManager.metaBuilder("warn").build(),
-                new WarnCommand(proxy, messageService, localeService, uuidResolver, punishmentService,
-                        warningTriggerService, templateRegistry, broadcaster));
+                new WarnCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
+                        punishmentService, warningTriggerService, templateRegistry, broadcaster));
         commandManager.register(commandManager.metaBuilder("kick").build(),
-                new KickCommand(proxy, messageService, localeService, uuidResolver, punishmentService, scopeResolver, broadcaster));
+                new KickCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
+                        punishmentService, scopeResolver, broadcaster));
         commandManager.register(commandManager.metaBuilder("note").build(),
-                new NoteCommand(proxy, messageService, localeService, uuidResolver, punishmentService));
+                new NoteCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, punishmentService));
 
         commandManager.register(commandManager.metaBuilder("history").build(),
-                new HistoryCommand(proxy, messageService, localeService, uuidResolver, historyService));
+                new HistoryCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, historyService));
         commandManager.register(commandManager.metaBuilder("staffhistory").build(),
-                new StaffHistoryCommand(proxy, messageService, localeService, uuidResolver, historyService));
+                new StaffHistoryCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, historyService));
     }
 
     private String pluginVersion() {

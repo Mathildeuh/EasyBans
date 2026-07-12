@@ -2,6 +2,7 @@ package fr.mathilde.easybans.command;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
+import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.cache.UuidResolver;
 import fr.mathilde.easybans.history.HistoryService;
 import fr.mathilde.easybans.locale.LocaleService;
@@ -20,8 +21,9 @@ public final class StaffHistoryCommand extends AbstractEasyBansCommand {
     private final HistoryService historyService;
 
     public StaffHistoryCommand(ProxyServer proxy, MessageService messages, LocaleService localeService,
-                                UuidResolver uuidResolver, HistoryService historyService) {
-        super(proxy, messages, localeService, uuidResolver);
+                                UuidResolver uuidResolver, OfflinePlayerCache offlinePlayerCache,
+                                HistoryService historyService) {
+        super(proxy, messages, localeService, uuidResolver, offlinePlayerCache);
         this.historyService = historyService;
     }
 
@@ -71,6 +73,15 @@ public final class StaffHistoryCommand extends AbstractEasyBansCommand {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    @Override
+    public List<String> suggest(Invocation invocation) {
+        String[] args = invocation.arguments();
+        if (args.length <= 1) {
+            return suggestPlayers(args.length == 0 ? "" : args[0]);
+        }
+        return List.of();
     }
 
     @Override

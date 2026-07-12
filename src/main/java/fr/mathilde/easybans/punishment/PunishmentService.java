@@ -135,7 +135,8 @@ public final class PunishmentService {
                 banOpt.map(ban -> kickScreenRenderer.renderIpBan(ban, locale, serverName)));
     }
 
-    public CompletableFuture<PunishmentOutcome> unban(UUID target, UUID staffUuid, String staffName, String reason) {
+    public CompletableFuture<PunishmentOutcome> unban(UUID target, String targetName, UUID staffUuid, String staffName,
+                                                        String reason) {
         return dao.findAnyActiveBan(target).thenCompose(existing -> {
             if (existing.isEmpty()) {
                 return CompletableFuture.completedFuture(PunishmentOutcome.NOT_FOUND);
@@ -143,7 +144,7 @@ public final class PunishmentService {
             return dao.deactivate(existing.get().id(), staffUuid, staffName, reason).thenApply(ok -> {
                 syncService.publish(SyncEventType.PUNISHMENT_CHANGED, target.toString());
                 RemovalInfo removal = new RemovalInfo(staffUuid, staffName, Instant.now(), reason);
-                discord.notifyUnban(existing.get(), target.toString(), removal);
+                discord.notifyUnban(existing.get(), targetName, removal);
                 return PunishmentOutcome.SUCCESS;
             });
         });
@@ -201,7 +202,8 @@ public final class PunishmentService {
         discord.notifyMute(mute, targetName);
     }
 
-    public CompletableFuture<PunishmentOutcome> unmute(UUID target, UUID staffUuid, String staffName, String reason) {
+    public CompletableFuture<PunishmentOutcome> unmute(UUID target, String targetName, UUID staffUuid, String staffName,
+                                                         String reason) {
         return dao.findAnyActiveMute(target).thenCompose(existing -> {
             if (existing.isEmpty()) {
                 return CompletableFuture.completedFuture(PunishmentOutcome.NOT_FOUND);
@@ -210,7 +212,7 @@ public final class PunishmentService {
                 activeMuteCache.clear(target);
                 syncService.publish(SyncEventType.PUNISHMENT_CHANGED, target.toString());
                 RemovalInfo removal = new RemovalInfo(staffUuid, staffName, Instant.now(), reason);
-                discord.notifyUnmute(existing.get(), target.toString(), removal);
+                discord.notifyUnmute(existing.get(), targetName, removal);
                 return PunishmentOutcome.SUCCESS;
             });
         });

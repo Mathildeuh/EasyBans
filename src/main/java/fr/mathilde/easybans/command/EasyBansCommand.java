@@ -3,6 +3,7 @@ package fr.mathilde.easybans.command;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.cache.UuidResolver;
 import fr.mathilde.easybans.database.dao.IpExemptionDao;
 import fr.mathilde.easybans.importer.ImportReport;
@@ -29,10 +30,11 @@ public final class EasyBansCommand extends AbstractEasyBansCommand {
     private final String pluginVersion;
 
     public EasyBansCommand(ProxyServer proxy, MessageService messages, LocaleService localeService,
-                            UuidResolver uuidResolver, IpExemptionDao ipExemptionDao, RollbackService rollbackService,
+                            UuidResolver uuidResolver, OfflinePlayerCache offlinePlayerCache,
+                            IpExemptionDao ipExemptionDao, RollbackService rollbackService,
                             ImportService importService, TemplateRegistry templateRegistry, Runnable reloadCallback,
                             String pluginVersion) {
-        super(proxy, messages, localeService, uuidResolver);
+        super(proxy, messages, localeService, uuidResolver, offlinePlayerCache);
         this.ipExemptionDao = ipExemptionDao;
         this.rollbackService = rollbackService;
         this.importService = importService;
@@ -204,6 +206,22 @@ public final class EasyBansCommand extends AbstractEasyBansCommand {
             String prefix = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
             return List.of("allow", "rollback", "import", "language", "template", "reload", "version").stream()
                     .filter(s -> s.startsWith(prefix))
+                    .collect(Collectors.toList());
+        }
+        String subcommand = args[0].toLowerCase(Locale.ROOT);
+        if (args.length == 2 && (subcommand.equals("allow") || subcommand.equals("rollback"))) {
+            return suggestPlayers(args[1]);
+        }
+        if (args.length == 2 && subcommand.equals("import")) {
+            String prefix = args[1].toLowerCase(Locale.ROOT);
+            return List.of(ImportSource.values()).stream()
+                    .map(s -> s.name().toLowerCase(Locale.ROOT))
+                    .filter(s -> s.startsWith(prefix))
+                    .collect(Collectors.toList());
+        }
+        if (args.length == 2 && (subcommand.equals("language") || subcommand.equals("lang"))) {
+            return List.of("fr", "en", "es", "it", "ru", "ar", "de").stream()
+                    .filter(code -> code.startsWith(args[1].toLowerCase(Locale.ROOT)))
                     .collect(Collectors.toList());
         }
         return List.of();

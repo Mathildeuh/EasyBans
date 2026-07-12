@@ -2,6 +2,7 @@ package fr.mathilde.easybans.command;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
+import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.cache.UuidResolver;
 import fr.mathilde.easybans.locale.LocaleService;
 import fr.mathilde.easybans.message.MessageService;
@@ -12,7 +13,9 @@ import fr.mathilde.easybans.punishment.Mute;
 import fr.mathilde.easybans.punishment.PunishmentActionResult;
 import fr.mathilde.easybans.punishment.PunishmentOutcome;
 import fr.mathilde.easybans.punishment.PunishmentService;
+import fr.mathilde.easybans.punishment.PunishmentType;
 import fr.mathilde.easybans.scope.ScopeResolver;
+import fr.mathilde.easybans.template.TemplateRegistry;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,13 +26,16 @@ public final class MuteCommand extends AbstractEasyBansCommand {
     private final PunishmentService punishmentService;
     private final ScopeResolver scopeResolver;
     private final PunishmentBroadcaster broadcaster;
+    private final TemplateRegistry templateRegistry;
 
     public MuteCommand(ProxyServer proxy, MessageService messages, LocaleService localeService, UuidResolver uuidResolver,
-                        PunishmentService punishmentService, ScopeResolver scopeResolver, PunishmentBroadcaster broadcaster) {
-        super(proxy, messages, localeService, uuidResolver);
+                        OfflinePlayerCache offlinePlayerCache, PunishmentService punishmentService,
+                        ScopeResolver scopeResolver, PunishmentBroadcaster broadcaster, TemplateRegistry templateRegistry) {
+        super(proxy, messages, localeService, uuidResolver, offlinePlayerCache);
         this.punishmentService = punishmentService;
         this.scopeResolver = scopeResolver;
         this.broadcaster = broadcaster;
+        this.templateRegistry = templateRegistry;
     }
 
     @Override
@@ -104,7 +110,23 @@ public final class MuteCommand extends AbstractEasyBansCommand {
     }
 
     private String defaultReason(CommandSource source) {
-        return messages.get(localeOf(source), "commands.default-reason").toString();
+        return messages.getPlain(localeOf(source), "commands.default-reason");
+    }
+
+    @Override
+    public List<String> suggest(Invocation invocation) {
+        String[] args = invocation.arguments();
+        if (args.length <= 1) {
+            return suggestPlayers(args.length == 0 ? "" : args[0]);
+        }
+        String currentToken = args[args.length - 1];
+        if (currentToken.startsWith("-")) {
+            return TabCompleteUtil.flags(currentToken, proxy, templateRegistry, PunishmentType.MUTE, true);
+        }
+        if (args.length == 2) {
+            return TabCompleteUtil.durations(currentToken);
+        }
+        return List.of();
     }
 
     @Override

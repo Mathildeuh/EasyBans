@@ -2,6 +2,7 @@ package fr.mathilde.easybans.command;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
+import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.cache.UuidResolver;
 import fr.mathilde.easybans.locale.LocaleService;
 import fr.mathilde.easybans.message.MessageService;
@@ -10,6 +11,7 @@ import fr.mathilde.easybans.message.PunishmentBroadcaster;
 import fr.mathilde.easybans.punishment.PunishmentService;
 import fr.mathilde.easybans.scope.ScopeResolver;
 
+import java.util.List;
 import java.util.Optional;
 
 public final class KickCommand extends AbstractEasyBansCommand {
@@ -19,9 +21,10 @@ public final class KickCommand extends AbstractEasyBansCommand {
     private final PunishmentBroadcaster broadcaster;
 
     public KickCommand(ProxyServer proxy, MessageService messages, LocaleService localeService,
-                        UuidResolver uuidResolver, PunishmentService punishmentService, ScopeResolver scopeResolver,
+                        UuidResolver uuidResolver, OfflinePlayerCache offlinePlayerCache,
+                        PunishmentService punishmentService, ScopeResolver scopeResolver,
                         PunishmentBroadcaster broadcaster) {
-        super(proxy, messages, localeService, uuidResolver);
+        super(proxy, messages, localeService, uuidResolver, offlinePlayerCache);
         this.punishmentService = punishmentService;
         this.scopeResolver = scopeResolver;
         this.broadcaster = broadcaster;
@@ -47,7 +50,7 @@ public final class KickCommand extends AbstractEasyBansCommand {
         Optional<String> scope = scopeResolver.resolve(flags.server());
         boolean silent = flags.silent() && source.hasPermission(Permissions.SILENT);
         String reason = flags.remaining().isEmpty()
-                ? messages.get(localeOf(source), "commands.default-reason").toString()
+                ? messages.getPlain(localeOf(source), "commands.default-reason")
                 : CommandArgs.joinFrom(flags.remaining(), 0);
 
         resolveTarget(source, targetName).thenAccept(uuidOpt -> uuidOpt.ifPresent(target -> {

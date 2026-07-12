@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import fr.mathilde.easybans.config.DiscordConfig;
 import fr.mathilde.easybans.punishment.Ban;
+import fr.mathilde.easybans.punishment.DurationFormatter;
 import fr.mathilde.easybans.punishment.Kick;
 import fr.mathilde.easybans.punishment.Mute;
 import fr.mathilde.easybans.punishment.RemovalInfo;
@@ -15,6 +16,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 
 /**
@@ -53,7 +56,7 @@ public final class DiscordWebhookService {
                 .field("Player", targetName, true)
                 .field("Staff", ban.staffName(), true)
                 .field("Scope", ban.serverScope().orElse("Global"), true)
-                .field("Duration", ban.isPermanent() ? "Permanent" : ban.expiresAt().toString(), true)
+                .field("Duration", formatRemaining(ban.expiresAt()), true)
                 .field("Reason", ban.reason(), false);
         send(embed);
     }
@@ -77,7 +80,7 @@ public final class DiscordWebhookService {
                 .field("Player", targetName, true)
                 .field("Staff", mute.staffName(), true)
                 .field("Scope", mute.serverScope().orElse("Global"), true)
-                .field("Duration", mute.isPermanent() ? "Permanent" : mute.expiresAt().toString(), true)
+                .field("Duration", formatRemaining(mute.expiresAt()), true)
                 .field("Reason", mute.reason(), false);
         send(embed);
     }
@@ -114,6 +117,14 @@ public final class DiscordWebhookService {
                 .field("Staff", kick.staffName(), true)
                 .field("Reason", kick.reason(), false);
         send(embed);
+    }
+
+    private String formatRemaining(Optional<Instant> expiresAt) {
+        if (expiresAt.isEmpty()) {
+            return "Permanent";
+        }
+        Duration remaining = Duration.between(Instant.now(), expiresAt.get());
+        return remaining.isNegative() ? "Expired" : DurationFormatter.format(remaining);
     }
 
     private void send(DiscordEmbed embed) {

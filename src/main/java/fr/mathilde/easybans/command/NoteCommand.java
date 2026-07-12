@@ -2,6 +2,7 @@ package fr.mathilde.easybans.command;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.ProxyServer;
+import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.cache.UuidResolver;
 import fr.mathilde.easybans.locale.LocaleService;
 import fr.mathilde.easybans.message.MessageService;
@@ -15,8 +16,9 @@ public final class NoteCommand extends AbstractEasyBansCommand {
     private final PunishmentService punishmentService;
 
     public NoteCommand(ProxyServer proxy, MessageService messages, LocaleService localeService,
-                        UuidResolver uuidResolver, PunishmentService punishmentService) {
-        super(proxy, messages, localeService, uuidResolver);
+                        UuidResolver uuidResolver, OfflinePlayerCache offlinePlayerCache,
+                        PunishmentService punishmentService) {
+        super(proxy, messages, localeService, uuidResolver, offlinePlayerCache);
         this.punishmentService = punishmentService;
     }
 
@@ -39,6 +41,15 @@ public final class NoteCommand extends AbstractEasyBansCommand {
                     var ctx = PlaceholderContext.create().put("player", targetName).build();
                     send(source, "commands.note.success", ctx);
                 })));
+    }
+
+    @Override
+    public List<String> suggest(Invocation invocation) {
+        String[] args = invocation.arguments();
+        if (args.length <= 1) {
+            return suggestPlayers(args.length == 0 ? "" : args[0]);
+        }
+        return List.of();
     }
 
     @Override
