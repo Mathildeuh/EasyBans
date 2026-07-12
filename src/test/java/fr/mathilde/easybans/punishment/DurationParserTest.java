@@ -52,4 +52,13 @@ class DurationParserTest {
     void rejectsZeroOrNegativeDuration() {
         assertThrows(IllegalArgumentException.class, () -> DurationParser.parse("0s"));
     }
+
+    @Test
+    void rejectsOverflowingDurationAsIllegalArgumentNotArithmeticException() {
+        // Long.MAX_VALUE seconds is ~9.22e18; these amounts overflow long-seconds arithmetic once
+        // multiplied by their unit, and must surface as the same IllegalArgumentException every
+        // other malformed duration does, not an uncaught ArithmeticException.
+        assertThrows(IllegalArgumentException.class, () -> DurationParser.parse("999999999999999d"));
+        assertThrows(IllegalArgumentException.class, () -> DurationParser.parse("999999999999y"));
+    }
 }

@@ -30,7 +30,7 @@ public final class ConfigLoader {
                 Yaml yaml = new Yaml();
                 Map<String, Object> raw = yaml.load(in);
                 YamlSection root = new YamlSection(raw);
-                return EasyBansConfig.fromYaml(root);
+                return EasyBansConfig.fromYaml(root, logger);
             }
         } catch (IOException e) {
             throw new IllegalStateException("Could not load config.yml", e);

@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -66,20 +67,30 @@ public final class PunishmentService {
                                                                 String staffName, Optional<String> scope,
                                                                 Optional<Duration> duration, boolean silent,
                                                                 boolean bypassOverride) {
-        return dao.findAnyActiveBan(target).thenCompose(existing -> {
-            if (existing.isPresent() && !bypassOverride) {
-                return CompletableFuture.completedFuture(PunishmentActionResult.<Ban>failure(PunishmentOutcome.ALREADY_PUNISHED));
-            }
-            return dao.insertBan(target, targetIp, ipBan, reason, staffUuid, staffName, scope, null,
-                            Optional.empty(), silent, Instant.now(), duration.map(Instant.now()::plus))
-                    .thenApply(ban -> {
-                        afterBanCreated(ban, targetName);
-                        return PunishmentActionResult.success(ban);
-                    });
-        });
+        return dao.insertBanIfNoneActive(target, targetIp, ipBan, reason, staffUuid, staffName, scope, null,
+                        Optional.empty(), silent, Instant.now(), duration.map(Instant.now()::plus))
+                .thenCompose(insertedOpt -> {
+                    if (insertedOpt.isPresent()) {
+                        afterBanCreated(insertedOpt.get(), targetName);
+                        return CompletableFuture.completedFuture(PunishmentActionResult.success(insertedOpt.get()));
+                    }
+                    if (!bypassOverride) {
+                        return CompletableFuture.completedFuture(PunishmentActionResult.<Ban>failure(PunishmentOutcome.ALREADY_PUNISHED));
+                    }
+                    return dao.deactivateAllActive(target, "BAN", staffUuid, staffName,
+                                    "Replaced by a new ban issued by " + staffName)
+                            .thenCompose(count -> dao.insertBan(target, targetIp, ipBan, reason, staffUuid, staffName,
+                                    scope, null, Optional.empty(), silent, Instant.now(),
+                                    duration.map(Instant.now()::plus)))
+                            .thenApply(ban -> {
+                                afterBanCreated(ban, targetName);
+                                return PunishmentActionResult.success(ban);
+                            });
+                });
     }
 
     public CompletableFuture<PunishmentActionResult<Ban>> banFromTemplate(UUID target, String targetName,
+                                                                            Optional<String> targetIp, boolean ipBan,
                                                                             String templateId, UUID staffUuid,
                                                                             String staffName, Optional<String> scope,
                                                                             boolean silent, boolean bypassOverride) {
@@ -90,20 +101,29 @@ public final class PunishmentService {
         if (template.get().type() != PunishmentType.BAN) {
             return CompletableFuture.completedFuture(PunishmentActionResult.failure(PunishmentOutcome.TEMPLATE_WRONG_TYPE));
         }
-        return dao.findAnyActiveBan(target).thenCompose(existing -> {
-            if (existing.isPresent() && !bypassOverride) {
-                return CompletableFuture.completedFuture(PunishmentActionResult.<Ban>failure(PunishmentOutcome.ALREADY_PUNISHED));
-            }
-            return dao.countByTemplate(target, templateId).thenCompose(previousCount -> {
-                TemplateStage stage = TemplateEngine.resolveStage(template.get(), previousCount);
-                return dao.insertBan(target, Optional.empty(), false, stage.reason(), staffUuid, staffName, scope,
-                                templateId, stage.kickscreenKey(), silent, Instant.now(),
-                                stage.duration().map(Instant.now()::plus))
-                        .thenApply(ban -> {
-                            afterBanCreated(ban, targetName);
-                            return PunishmentActionResult.success(ban);
-                        });
-            });
+        return dao.countByTemplate(target, templateId).thenCompose(previousCount -> {
+            TemplateStage stage = TemplateEngine.resolveStage(template.get(), previousCount);
+            Optional<Instant> expiresAt = stage.duration().map(Instant.now()::plus);
+            return dao.insertBanIfNoneActive(target, targetIp, ipBan, stage.reason(), staffUuid, staffName, scope,
+                            templateId, stage.kickscreenKey(), silent, Instant.now(), expiresAt)
+                    .thenCompose(insertedOpt -> {
+                        if (insertedOpt.isPresent()) {
+                            afterBanCreated(insertedOpt.get(), targetName);
+                            return CompletableFuture.completedFuture(PunishmentActionResult.success(insertedOpt.get()));
+                        }
+                        if (!bypassOverride) {
+                            return CompletableFuture.completedFuture(PunishmentActionResult.<Ban>failure(PunishmentOutcome.ALREADY_PUNISHED));
+                        }
+                        return dao.deactivateAllActive(target, "BAN", staffUuid, staffName,
+                                        "Replaced by a new ban issued by " + staffName)
+                                .thenCompose(count -> dao.insertBan(target, targetIp, ipBan, stage.reason(), staffUuid,
+                                        staffName, scope, templateId, stage.kickscreenKey(), silent, Instant.now(),
+                                        expiresAt))
+                                .thenApply(ban -> {
+                                    afterBanCreated(ban, targetName);
+                                    return PunishmentActionResult.success(ban);
+                                });
+                    });
         });
     }
 
@@ -150,23 +170,58 @@ public final class PunishmentService {
         });
     }
 
+    /** Looks up any punishment (of any type) by its database id - backs {@code /easybans lookup <id>}. */
+    public CompletableFuture<Optional<Punishment>> findById(long id) {
+        return dao.findById(id);
+    }
+
+    /** Unbans by raw IP address rather than player - backs vanilla's {@code /pardon-ip}. */
+    public CompletableFuture<PunishmentOutcome> unbanIp(String ip, UUID staffUuid, String staffName, String reason) {
+        return dao.findAnyActiveIpBan(ip).thenCompose(existing -> {
+            if (existing.isEmpty()) {
+                return CompletableFuture.completedFuture(PunishmentOutcome.NOT_FOUND);
+            }
+            return dao.deactivate(existing.get().id(), staffUuid, staffName, reason).thenApply(ok -> {
+                RemovalInfo removal = new RemovalInfo(staffUuid, staffName, Instant.now(), reason);
+                discord.notifyUnban(existing.get(), ip, removal);
+                return PunishmentOutcome.SUCCESS;
+            });
+        });
+    }
+
+    public CompletableFuture<List<Ban>> activeBans(boolean ipOnly, int page, int pageSize) {
+        return dao.activeBans(ipOnly, page, pageSize);
+    }
+
+    public CompletableFuture<Integer> countActiveBans(boolean ipOnly) {
+        return dao.countActiveBans(ipOnly);
+    }
+
     // ---------------------------------------------------------------- mute
 
     public CompletableFuture<PunishmentActionResult<Mute>> mute(UUID target, String targetName, String reason,
                                                                   UUID staffUuid, String staffName,
                                                                   Optional<String> scope, Optional<Duration> duration,
                                                                   boolean silent, boolean bypassOverride) {
-        return dao.findAnyActiveMute(target).thenCompose(existing -> {
-            if (existing.isPresent() && !bypassOverride) {
-                return CompletableFuture.completedFuture(PunishmentActionResult.<Mute>failure(PunishmentOutcome.ALREADY_PUNISHED));
-            }
-            return dao.insertMute(target, reason, staffUuid, staffName, scope, null, silent, Instant.now(),
-                            duration.map(Instant.now()::plus))
-                    .thenApply(mute -> {
-                        afterMuteCreated(mute, targetName);
-                        return PunishmentActionResult.success(mute);
-                    });
-        });
+        return dao.insertMuteIfNoneActive(target, reason, staffUuid, staffName, scope, null, silent, Instant.now(),
+                        duration.map(Instant.now()::plus))
+                .thenCompose(insertedOpt -> {
+                    if (insertedOpt.isPresent()) {
+                        afterMuteCreated(insertedOpt.get(), targetName);
+                        return CompletableFuture.completedFuture(PunishmentActionResult.success(insertedOpt.get()));
+                    }
+                    if (!bypassOverride) {
+                        return CompletableFuture.completedFuture(PunishmentActionResult.<Mute>failure(PunishmentOutcome.ALREADY_PUNISHED));
+                    }
+                    return dao.deactivateAllActive(target, "MUTE", staffUuid, staffName,
+                                    "Replaced by a new mute issued by " + staffName)
+                            .thenCompose(count -> dao.insertMute(target, reason, staffUuid, staffName, scope, null,
+                                    silent, Instant.now(), duration.map(Instant.now()::plus)))
+                            .thenApply(mute -> {
+                                afterMuteCreated(mute, targetName);
+                                return PunishmentActionResult.success(mute);
+                            });
+                });
     }
 
     public CompletableFuture<PunishmentActionResult<Mute>> muteFromTemplate(UUID target, String targetName,
@@ -180,19 +235,28 @@ public final class PunishmentService {
         if (template.get().type() != PunishmentType.MUTE) {
             return CompletableFuture.completedFuture(PunishmentActionResult.failure(PunishmentOutcome.TEMPLATE_WRONG_TYPE));
         }
-        return dao.findAnyActiveMute(target).thenCompose(existing -> {
-            if (existing.isPresent() && !bypassOverride) {
-                return CompletableFuture.completedFuture(PunishmentActionResult.<Mute>failure(PunishmentOutcome.ALREADY_PUNISHED));
-            }
-            return dao.countByTemplate(target, templateId).thenCompose(previousCount -> {
-                TemplateStage stage = TemplateEngine.resolveStage(template.get(), previousCount);
-                return dao.insertMute(target, stage.reason(), staffUuid, staffName, scope, templateId, silent,
-                                Instant.now(), stage.duration().map(Instant.now()::plus))
-                        .thenApply(mute -> {
-                            afterMuteCreated(mute, targetName);
-                            return PunishmentActionResult.success(mute);
-                        });
-            });
+        return dao.countByTemplate(target, templateId).thenCompose(previousCount -> {
+            TemplateStage stage = TemplateEngine.resolveStage(template.get(), previousCount);
+            Optional<Instant> expiresAt = stage.duration().map(Instant.now()::plus);
+            return dao.insertMuteIfNoneActive(target, stage.reason(), staffUuid, staffName, scope, templateId,
+                            silent, Instant.now(), expiresAt)
+                    .thenCompose(insertedOpt -> {
+                        if (insertedOpt.isPresent()) {
+                            afterMuteCreated(insertedOpt.get(), targetName);
+                            return CompletableFuture.completedFuture(PunishmentActionResult.success(insertedOpt.get()));
+                        }
+                        if (!bypassOverride) {
+                            return CompletableFuture.completedFuture(PunishmentActionResult.<Mute>failure(PunishmentOutcome.ALREADY_PUNISHED));
+                        }
+                        return dao.deactivateAllActive(target, "MUTE", staffUuid, staffName,
+                                        "Replaced by a new mute issued by " + staffName)
+                                .thenCompose(count -> dao.insertMute(target, stage.reason(), staffUuid, staffName,
+                                        scope, templateId, silent, Instant.now(), expiresAt))
+                                .thenApply(mute -> {
+                                    afterMuteCreated(mute, targetName);
+                                    return PunishmentActionResult.success(mute);
+                                });
+                    });
         });
     }
 

@@ -32,8 +32,8 @@ public final class EasyBansCommand extends AbstractEasyBansCommand {
     public EasyBansCommand(ProxyServer proxy, MessageService messages, LocaleService localeService,
                             UuidResolver uuidResolver, OfflinePlayerCache offlinePlayerCache,
                             IpExemptionDao ipExemptionDao, RollbackService rollbackService,
-                            ImportService importService, TemplateRegistry templateRegistry, Runnable reloadCallback,
-                            String pluginVersion) {
+                            ImportService importService, TemplateRegistry templateRegistry,
+                            Runnable reloadCallback, String pluginVersion) {
         super(proxy, messages, localeService, uuidResolver, offlinePlayerCache);
         this.ipExemptionDao = ipExemptionDao;
         this.rollbackService = rollbackService;

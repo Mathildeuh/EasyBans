@@ -10,11 +10,14 @@ import fr.mathilde.easybans.cache.ActiveMuteCache;
 import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.cache.UuidResolver;
 import fr.mathilde.easybans.command.BanCommand;
+import fr.mathilde.easybans.command.BanListCommand;
 import fr.mathilde.easybans.command.EasyBansCommand;
 import fr.mathilde.easybans.command.HistoryCommand;
 import fr.mathilde.easybans.command.KickCommand;
+import fr.mathilde.easybans.command.LookupCommand;
 import fr.mathilde.easybans.command.MuteCommand;
 import fr.mathilde.easybans.command.NoteCommand;
+import fr.mathilde.easybans.command.PardonIpCommand;
 import fr.mathilde.easybans.command.StaffHistoryCommand;
 import fr.mathilde.easybans.command.UnbanCommand;
 import fr.mathilde.easybans.command.UnmuteCommand;
@@ -163,7 +166,8 @@ public class EasyBans {
                                     OfflinePlayerCache offlinePlayerCache, ActiveMuteCache activeMuteCache,
                                     MessageService messages) {
         ConnectionListener connectionListener = new ConnectionListener(punishmentService, punishmentDao, ipExemptionDao,
-                ipHistoryDao, playerDao, localeService, linkedAccountService, messages, offlinePlayerCache, logger);
+                ipHistoryDao, playerDao, localeService, linkedAccountService, messages, offlinePlayerCache,
+                activeMuteCache, logger);
         proxy.getEventManager().register(this, connectionListener);
 
         ChatMuteListener chatMuteListener = new ChatMuteListener(activeMuteCache, messages, localeService);
@@ -181,14 +185,20 @@ public class EasyBans {
                 new EasyBansCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
                         ipExemptionDao, rollbackService, importService, templateRegistry, this::reload, pluginVersion()));
 
+        // Registering the exact vanilla names too (ban-ip, pardon, pardon-ip, banlist) makes Velocity intercept them
+        // here instead of forwarding to the backend Paper/Spigot/Bukkit server's own vanilla ban system.
         commandManager.register(commandManager.metaBuilder("ban").build(),
                 new BanCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
                         punishmentService, scopeResolver, broadcaster, templateRegistry, false));
-        commandManager.register(commandManager.metaBuilder("banip").build(),
+        commandManager.register(commandManager.metaBuilder("banip").aliases("ban-ip").build(),
                 new BanCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
                         punishmentService, scopeResolver, broadcaster, templateRegistry, true));
-        commandManager.register(commandManager.metaBuilder("unban").build(),
+        commandManager.register(commandManager.metaBuilder("unban").aliases("pardon").build(),
                 new UnbanCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, punishmentService));
+        commandManager.register(commandManager.metaBuilder("pardon-ip").build(),
+                new PardonIpCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, punishmentService));
+        commandManager.register(commandManager.metaBuilder("banlist").build(),
+                new BanListCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, punishmentService));
 
         commandManager.register(commandManager.metaBuilder("mute").build(),
                 new MuteCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
@@ -198,7 +208,7 @@ public class EasyBans {
 
         commandManager.register(commandManager.metaBuilder("warn").build(),
                 new WarnCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
-                        punishmentService, warningTriggerService, templateRegistry, broadcaster));
+                        punishmentService, warningTriggerService, templateRegistry, scopeResolver, broadcaster));
         commandManager.register(commandManager.metaBuilder("kick").build(),
                 new KickCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
                         punishmentService, scopeResolver, broadcaster));
@@ -209,6 +219,8 @@ public class EasyBans {
                 new HistoryCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, historyService));
         commandManager.register(commandManager.metaBuilder("staffhistory").build(),
                 new StaffHistoryCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, historyService));
+        commandManager.register(commandManager.metaBuilder("lookup").build(),
+                new LookupCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, punishmentService));
     }
 
     private String pluginVersion() {

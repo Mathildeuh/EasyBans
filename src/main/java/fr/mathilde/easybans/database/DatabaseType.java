@@ -16,10 +16,22 @@ public enum DatabaseType {
             return H2;
         }
         return switch (value.trim().toLowerCase()) {
+            case "h2" -> H2;
             case "mysql" -> MYSQL;
             case "mariadb" -> MARIADB;
             case "postgres", "postgresql" -> POSTGRESQL;
             default -> H2;
+        };
+    }
+
+    /** Whether {@code value} is one of the strings {@link #fromConfig} maps to something other than its H2 fallback. */
+    public static boolean isRecognized(String value) {
+        if (value == null) {
+            return true; // absent is a legitimate way to ask for the default
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "h2", "mysql", "mariadb", "postgres", "postgresql" -> true;
+            default -> false;
         };
     }
 

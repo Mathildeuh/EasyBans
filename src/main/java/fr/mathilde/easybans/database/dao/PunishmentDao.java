@@ -132,6 +132,115 @@ public final class PunishmentDao {
         }
     }
 
+    /**
+     * Atomically inserts a ban only if the target has no currently-active ban, in a single SQL
+     * statement (INSERT ... SELECT ... WHERE NOT EXISTS) - this closes the check-then-insert
+     * race that a separate findAnyActiveBan()-then-insertBan() pair has under concurrent calls
+     * for the same target (two staff banning at once, or an auto-ban racing a manual one).
+     * Returns empty if a currently-active ban already existed (no row was inserted).
+     */
+    public CompletableFuture<Optional<Ban>> insertBanIfNoneActive(UUID target, Optional<String> targetIp,
+                                                                    boolean ipBanned, String reason, UUID staffUuid,
+                                                                    String staffName, Optional<String> serverScope,
+                                                                    String templateId, Optional<String> kickscreenKey,
+                                                                    boolean silent, Instant createdAt,
+                                                                    Optional<Instant> expiresAt) {
+        return db.supplyAsync(connection -> {
+            Long id = insertRowIfNoneActive(connection, "BAN", target, targetIp.orElse(null), ipBanned, reason,
+                    staffUuid, staffName, serverScope.orElse(null), templateId, kickscreenKey.orElse(null), silent,
+                    createdAt.toEpochMilli(), expiresAt.map(Instant::toEpochMilli).orElse(null));
+            if (id == null) {
+                return Optional.empty();
+            }
+            return Optional.of(new Ban(id, target, targetIp, ipBanned, reason, staffUuid, staffName, serverScope,
+                    templateId, kickscreenKey, silent, createdAt, expiresAt, true, Optional.empty()));
+        });
+    }
+
+    /** Same guarantee as {@link #insertBanIfNoneActive} but for mutes. */
+    public CompletableFuture<Optional<Mute>> insertMuteIfNoneActive(UUID target, String reason, UUID staffUuid,
+                                                                      String staffName, Optional<String> serverScope,
+                                                                      String templateId, boolean silent,
+                                                                      Instant createdAt, Optional<Instant> expiresAt) {
+        return db.supplyAsync(connection -> {
+            Long id = insertRowIfNoneActive(connection, "MUTE", target, null, false, reason, staffUuid, staffName,
+                    serverScope.orElse(null), templateId, null, silent, createdAt.toEpochMilli(),
+                    expiresAt.map(Instant::toEpochMilli).orElse(null));
+            if (id == null) {
+                return Optional.empty();
+            }
+            return Optional.of(new Mute(id, target, reason, staffUuid, staffName, serverScope, templateId, silent,
+                    createdAt, expiresAt, true, Optional.empty()));
+        });
+    }
+
+    private Long insertRowIfNoneActive(Connection connection, String type, UUID target, String targetIp,
+                                        boolean ipBanned, String reason, UUID staffUuid, String staffName,
+                                        String serverScope, String templateId, String kickscreenKey, boolean silent,
+                                        long createdAt, Long expiresAt) throws SQLException {
+        String table = db.table("punishments");
+        String sql = "INSERT INTO " + table + " (type, target_uuid, target_ip, ip_banned, category, reason, "
+                + "staff_uuid, staff_name, server_scope, template_id, kickscreen_key, silent, active, acknowledged, "
+                + "created_at, expires_at) "
+                + "SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, TRUE, ?, ? "
+                + "WHERE NOT EXISTS (SELECT 1 FROM " + table + " WHERE type = ? AND target_uuid = ? "
+                + "AND active = TRUE AND (expires_at IS NULL OR expires_at > ?))";
+        try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            int i = 1;
+            ps.setString(i++, type);
+            ps.setString(i++, target.toString());
+            ps.setString(i++, targetIp);
+            ps.setBoolean(i++, ipBanned);
+            ps.setString(i++, null); // category: only meaningful for WARN, never used by ban/mute
+            ps.setString(i++, reason);
+            ps.setString(i++, staffUuid.toString());
+            ps.setString(i++, staffName);
+            ps.setString(i++, serverScope);
+            ps.setString(i++, templateId);
+            ps.setString(i++, kickscreenKey);
+            ps.setBoolean(i++, silent);
+            ps.setLong(i++, createdAt);
+            if (expiresAt != null) {
+                ps.setLong(i++, expiresAt);
+            } else {
+                ps.setNull(i++, java.sql.Types.BIGINT);
+            }
+            ps.setString(i++, type);
+            ps.setString(i++, target.toString());
+            ps.setLong(i, Instant.now().toEpochMilli());
+
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                return null;
+            }
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getLong(1);
+                }
+                throw new SQLException("Conditional insert into punishments affected a row but returned no generated id");
+            }
+        }
+    }
+
+    /** Deactivates every currently-active punishment of the given type for a target - used by the override path. */
+    public CompletableFuture<Integer> deactivateAllActive(UUID target, String type, UUID removedBy,
+                                                           String removedByName, String reason) {
+        return db.supplyAsync(connection -> {
+            String sql = "UPDATE " + db.table("punishments") + " SET active = FALSE, removed_by_uuid = ?, "
+                    + "removed_by_name = ?, removed_at = ?, removed_reason = ? "
+                    + "WHERE target_uuid = ? AND type = ? AND active = TRUE";
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, removedBy.toString());
+                ps.setString(2, removedByName);
+                ps.setLong(3, Instant.now().toEpochMilli());
+                ps.setString(4, reason);
+                ps.setString(5, target.toString());
+                ps.setString(6, type);
+                return ps.executeUpdate();
+            }
+        });
+    }
+
     // ---------------------------------------------------------------- active lookups
 
     public CompletableFuture<Optional<Ban>> findActiveBan(UUID target, String server) {
@@ -169,6 +278,62 @@ public final class PunishmentDao {
     /** Any currently-active mute regardless of server scope - used for the anti-overwrite check. */
     public CompletableFuture<Optional<Mute>> findAnyActiveMute(UUID target) {
         return findAnyActiveOfType(target, "MUTE").thenApply(p -> p.map(x -> (Mute) x));
+    }
+
+    /** Any currently-active IP ban on this address, regardless of server scope - backs {@code /pardon-ip}. */
+    public CompletableFuture<Optional<Ban>> findAnyActiveIpBan(String ip) {
+        return db.supplyAsync(connection -> {
+            String sql = "SELECT * FROM " + db.table("punishments") + " WHERE type = 'BAN' AND ip_banned = TRUE "
+                    + "AND target_ip = ? AND active = TRUE AND (expires_at IS NULL OR expires_at > ?) "
+                    + "ORDER BY created_at DESC";
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, ip);
+                ps.setLong(2, Instant.now().toEpochMilli());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return Optional.of((Ban) map(rs));
+                    }
+                    return Optional.empty();
+                }
+            }
+        });
+    }
+
+    /** Currently-active bans, newest first - backs {@code /banlist} (vanilla's own ban listing command). */
+    public CompletableFuture<List<Ban>> activeBans(boolean ipOnly, int page, int pageSize) {
+        return db.supplyAsync(connection -> {
+            String sql = "SELECT * FROM " + db.table("punishments") + " WHERE type = 'BAN' AND ip_banned = ? "
+                    + "AND active = TRUE AND (expires_at IS NULL OR expires_at > ?) "
+                    + "ORDER BY created_at DESC LIMIT ? OFFSET ?";
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setBoolean(1, ipOnly);
+                ps.setLong(2, Instant.now().toEpochMilli());
+                ps.setInt(3, pageSize);
+                ps.setInt(4, Math.max(0, page) * pageSize);
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<Ban> result = new ArrayList<>();
+                    while (rs.next()) {
+                        result.add((Ban) map(rs));
+                    }
+                    return result;
+                }
+            }
+        });
+    }
+
+    public CompletableFuture<Integer> countActiveBans(boolean ipOnly) {
+        return db.supplyAsync(connection -> {
+            String sql = "SELECT COUNT(*) FROM " + db.table("punishments") + " WHERE type = 'BAN' AND ip_banned = ? "
+                    + "AND active = TRUE AND (expires_at IS NULL OR expires_at > ?)";
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setBoolean(1, ipOnly);
+                ps.setLong(2, Instant.now().toEpochMilli());
+                try (ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    return rs.getInt(1);
+                }
+            }
+        });
     }
 
     private CompletableFuture<Optional<Punishment>> findAnyActiveOfType(UUID target, String type) {

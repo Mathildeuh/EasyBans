@@ -1,5 +1,7 @@
 # EasyBans
 
+[![Build](https://github.com/Mathildeuh/EasyBans/actions/workflows/build.yml/badge.svg)](https://github.com/Mathildeuh/EasyBans/actions/workflows/build.yml)
+
 A moderation plugin for [Velocity](https://velocitypowered.com/) proxies: bans, IP bans,
 mutes, warnings, kicks and staff notes, with escalating punishment templates, per-server
 scoping, multi-instance sync, Discord webhooks, linked-account detection, and full i18n
@@ -8,6 +10,13 @@ scoping, multi-instance sync, Discord webhooks, linked-account detection, and fu
 See also: [CONFIG.md](CONFIG.md) (full configuration reference and how to add a language),
 [ARCHITECTURE.md](ARCHITECTURE.md) (design decisions and trade-offs), and
 [PERMISSIONS.md](PERMISSIONS.md) (every permission node).
+
+EasyBans registers every vanilla ban-related command name (`ban`, `ban-ip`, `pardon`,
+`pardon-ip`, `banlist`, `kick`) directly on the proxy, so those always run through EasyBans
+instead of falling through to whatever the backend Paper/Spigot/Bukkit server's own vanilla ban
+system would have done. This only covers traffic actually routed through Velocity - direct
+console/RCON access to a backend server bypasses the proxy and can't be intercepted by any
+proxy plugin.
 
 ## Requirements
 
@@ -47,8 +56,9 @@ op-only permissions until you wire up your permission plugin (see PERMISSIONS.md
 
 ```
 /ban <player> <duration|reason...> [-s] [-server:<name>] [-t:<template>]
-/banip <player> <duration|reason...> [-s] [-server:<name>]
-/unban <player> [reason...]
+/banip <player> <duration|reason...> [-s] [-server:<name>]   (alias: /ban-ip, the vanilla name)
+/unban <player> [reason...]                                  (alias: /pardon, the vanilla name)
+/pardon-ip <ip> [reason...]
 /mute <player> <duration|reason...> [-s] [-server:<name>] [-t:<template>]
 /unmute <player> [reason...]
 /warn <player> <category> <reason...>
@@ -56,6 +66,8 @@ op-only permissions until you wire up your permission plugin (see PERMISSIONS.md
 /note <player> <note...>
 /history <player> [page]
 /staffhistory <staff> [page]
+/banlist [players|ips] [page]                                - vanilla's own ban-listing command
+/lookup <id>                                                 - show a single punishment's full details by its database ID
 
 /easybans allow <player> <ip>          - exempt an account from IP bans without lifting the ban
 /easybans rollback <staff>             - request rollback of every active punishment by <staff>

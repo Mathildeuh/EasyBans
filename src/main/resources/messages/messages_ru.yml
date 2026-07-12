@@ -24,6 +24,7 @@ errors:
   not-banned: "<red><player> сейчас не забанен."
   not-muted: "<red><player> сейчас не в муте."
   unknown-category: "<red>Неизвестная категория предупреждения: <category>"
+  ip-not-banned: "<red>Этот IP сейчас не забанен: <white><ip>"
 
 notify:
   warning-received: "<yellow>Вы получили предупреждение, пока были не в сети: <white><reason></white> <yellow>(<category>) - выдано <white><staff>"
@@ -76,6 +77,14 @@ commands:
     usage: "<red>Использование: /unban <игрок> [причина...]"
     success: "<green>С игрока <yellow><player></yellow> снят бан."
 
+  pardonip:
+    usage: "<red>Использование: /pardon-ip <ip> [причина...]"
+    success: "<green>Бан IP <white><ip> <green>снят"
+
+  banlist:
+    header: "<gold>Активные баны <gray>(страница <white><page></white>/<white><total_pages></white>, всего <white><total></white>)"
+    entry: "<gray>[#<id>] <white><target> <gray>- <white><reason> <gray>(от <white><staff></white>)"
+
   mute:
     usage: "<red>Использование: /mute <игрок> <срок|причина...> [-s] [-server:<имя>] [-t:<шаблон>]"
     success: "<green>Игрок <yellow><player></yellow> замучен за <white><reason></white> (<white><duration></white>)."
@@ -90,6 +99,7 @@ commands:
     usage: "<red>Использование: /warn <игрок> <категория> <причина...>"
     success: "<green>Игрок <yellow><player></yellow> предупреждён (<white><category></white>): <white><reason>"
     broadcast: "<yellow><player> <gray>получил предупреждение от <white><staff> <gray>(<white><reason></white>)"
+    notice: "<yellow>Вы получили предупреждение <gray>(<white><category></white>)<yellow>: <white><reason></white> <gray>- от <white><staff>"
 
   kick:
     usage: "<red>Использование: /kick <игрок> <причина...> [-server:<имя>]"
@@ -108,6 +118,11 @@ commands:
   staffhistory:
     usage: "<red>Использование: /staffhistory <модератор> [страница]"
     header: "<gold>Наказания, выданные <white><staff></white> <gray>(страница <white><page></white>/<white><total_pages></white>, всего <white><total></white>)"
+
+  lookup:
+    usage: "<red>Использование: /lookup <id>"
+    not-found: "<red>Наказание с ID #<id> не найдено"
+    entry: "<gray>[<white><type></white>#<id>] <white><target> <gray>| модератор: <white><staff></white> <gray>| область: <white><scope></white> <gray>| статус: <white><status></white>\n<gray>причина: <white><reason></white>\n<gray>дата: <white><original_date></white> <gray>| срок: <white><duration>"
 
   easybans:
     version: "<gray>Версия EasyBans: <white><version>"

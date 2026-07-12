@@ -74,9 +74,15 @@ public final class BanCommand extends AbstractEasyBansCommand {
                 return;
             }
 
+            Optional<String> ip = ipMode ? currentIpOf(target) : Optional.empty();
+            if (ipMode && ip.isEmpty()) {
+                send(source, "errors.player-never-joined");
+                return;
+            }
+
             if (flags.template().isPresent()) {
-                punishmentService.banFromTemplate(target, targetName, flags.template().get(), staffUuid, staffName,
-                                scope, silent, bypassOverride)
+                punishmentService.banFromTemplate(target, targetName, ip, ipMode, flags.template().get(), staffUuid,
+                                staffName, scope, silent, bypassOverride)
                         .thenAccept(result -> handleResult(source, targetName, result));
                 return;
             }
@@ -87,12 +93,6 @@ public final class BanCommand extends AbstractEasyBansCommand {
                 return;
             }
             CommandArgs.DurationAndReason parsed = CommandArgs.parseDurationAndReason(remaining, defaultReason(source));
-
-            Optional<String> ip = ipMode ? currentIpOf(target) : Optional.empty();
-            if (ipMode && ip.isEmpty()) {
-                send(source, "errors.player-never-joined");
-                return;
-            }
 
             punishmentService.ban(target, targetName, ip, ipMode, parsed.reason(), staffUuid, staffName, scope,
                             parsed.duration(), silent, bypassOverride)

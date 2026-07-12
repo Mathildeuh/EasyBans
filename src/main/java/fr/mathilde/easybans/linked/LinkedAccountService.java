@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Detects, on login, whether the connecting player shares an IP with an already-banned
@@ -56,6 +57,7 @@ public final class LinkedAccountService {
         if (!config.notifyStaff() && !config.autoBan()) {
             return;
         }
+        AtomicBoolean autoBanned = new AtomicBoolean(false);
         ipHistoryDao.findAccountsSharingIp(uuid, ip).thenAccept(others -> {
             for (UUID other : others) {
                 punishmentDao.findAnyActiveBan(other).thenAccept(activeBan -> {
@@ -67,12 +69,21 @@ public final class LinkedAccountService {
                         if (config.notifyStaff()) {
                             notifyStaff(name, otherName, ip);
                         }
-                        if (config.autoBan()) {
+                        // Only ever attempt one auto-ban per login, even if the player shares an IP with several
+                        // banned accounts - and never bypass anti-overwrite here, so a race with another auto-ban
+                        // or a manual /ban for the same target can't produce duplicate active bans.
+                        if (config.autoBan() && autoBanned.compareAndSet(false, true)) {
                             punishmentService.ban(uuid, name, Optional.of(ip), false,
                                     "Linked account of banned player " + otherName, PunishmentConstants.CONSOLE_UUID,
-                                    PunishmentConstants.CONSOLE_NAME, Optional.empty(), Optional.empty(), true, true);
+                                    PunishmentConstants.CONSOLE_NAME, Optional.empty(), Optional.empty(), true, false);
                         }
+                    }).exceptionally(e -> {
+                        logger.warn("Linked-account player lookup failed for {} (shared IP with {})", name, other, e);
+                        return null;
                     });
+                }).exceptionally(e -> {
+                    logger.warn("Linked-account ban check failed for {} (shared IP with {})", name, other, e);
+                    return null;
                 });
             }
         }).exceptionally(e -> {

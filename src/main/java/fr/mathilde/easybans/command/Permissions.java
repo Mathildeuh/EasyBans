@@ -13,6 +13,8 @@ public final class Permissions {
     public static final String NOTE = "easybans.note";
     public static final String HISTORY = "easybans.history";
     public static final String STAFF_HISTORY = "easybans.staffhistory";
+    /** {@code /banlist} - vanilla's own ban-listing command, replaced by EasyBans. */
+    public static final String BANLIST = "easybans.banlist";
     public static final String ROLLBACK = "easybans.rollback";
     public static final String IMPORT = "easybans.import";
     public static final String ALLOW = "easybans.allow";

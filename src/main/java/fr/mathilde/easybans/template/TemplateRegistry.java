@@ -74,13 +74,23 @@ public final class TemplateRegistry {
             Map<String, PunishmentTemplate> loadedTemplates = new LinkedHashMap<>();
             Map<String, Object> punishmentTemplates = (Map<String, Object>) root.getOrDefault("punishment-templates", Map.of());
             for (Map.Entry<String, Object> entry : punishmentTemplates.entrySet()) {
-                parseTemplate(loadedTemplates, entry.getKey(), (Map<String, Object>) entry.getValue());
+                try {
+                    parseTemplate(loadedTemplates, entry.getKey(), (Map<String, Object>) entry.getValue());
+                } catch (RuntimeException e) {
+                    // One malformed entry (bad enum, bad duration string, missing field, wrong YAML shape)
+                    // must not prevent the plugin from starting - skip it and keep going.
+                    logger.warn("Skipping malformed punishment template '{}': {}", entry.getKey(), e.toString());
+                }
             }
 
             Map<String, WarningCategory> loadedCategories = new LinkedHashMap<>();
             Map<String, Object> warningCategories = (Map<String, Object>) root.getOrDefault("warning-categories", Map.of());
             for (Map.Entry<String, Object> entry : warningCategories.entrySet()) {
-                parseCategory(loadedCategories, entry.getKey(), (Map<String, Object>) entry.getValue());
+                try {
+                    parseCategory(loadedCategories, entry.getKey(), (Map<String, Object>) entry.getValue());
+                } catch (RuntimeException e) {
+                    logger.warn("Skipping malformed warning category '{}': {}", entry.getKey(), e.toString());
+                }
             }
 
             // Swap both references atomically so concurrent readers never see a partially-rebuilt registry.

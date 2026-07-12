@@ -9,6 +9,7 @@ import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.proxy.Player;
+import fr.mathilde.easybans.cache.ActiveMuteCache;
 import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.database.dao.IpExemptionDao;
 import fr.mathilde.easybans.database.dao.PlayerDao;
@@ -44,12 +45,14 @@ public final class ConnectionListener {
     private final LinkedAccountService linkedAccountService;
     private final MessageService messages;
     private final OfflinePlayerCache offlinePlayerCache;
+    private final ActiveMuteCache activeMuteCache;
     private final Logger logger;
 
     public ConnectionListener(PunishmentService punishmentService, PunishmentDao punishmentDao,
                                IpExemptionDao ipExemptionDao, IpHistoryDao ipHistoryDao, PlayerDao playerDao,
                                LocaleService localeService, LinkedAccountService linkedAccountService,
-                               MessageService messages, OfflinePlayerCache offlinePlayerCache, Logger logger) {
+                               MessageService messages, OfflinePlayerCache offlinePlayerCache,
+                               ActiveMuteCache activeMuteCache, Logger logger) {
         this.punishmentService = punishmentService;
         this.punishmentDao = punishmentDao;
         this.ipExemptionDao = ipExemptionDao;
@@ -59,6 +62,7 @@ public final class ConnectionListener {
         this.linkedAccountService = linkedAccountService;
         this.messages = messages;
         this.offlinePlayerCache = offlinePlayerCache;
+        this.activeMuteCache = activeMuteCache;
         this.logger = logger;
     }
 
@@ -128,7 +132,10 @@ public final class ConnectionListener {
             String targetServer = event.getOriginalServer().getServerInfo().getName();
             punishmentService.checkLoginBan(player.getUniqueId(), targetServer, localeService.getCached(player.getUniqueId()))
                     .whenComplete((banScreen, error) -> {
-                        if (error == null && banScreen.isPresent()) {
+                        if (error != null) {
+                            logger.error("Per-server ban check failed for {} connecting to {}",
+                                    player.getUsername(), targetServer, error);
+                        } else if (banScreen.isPresent()) {
                             event.setResult(ServerPreConnectEvent.ServerResult.denied());
                             player.sendMessage(banScreen.get());
                         }
@@ -144,7 +151,12 @@ public final class ConnectionListener {
 
     @Subscribe
     public void onDisconnect(DisconnectEvent event) {
-        localeService.forget(event.getPlayer().getUniqueId());
+        UUID uuid = event.getPlayer().getUniqueId();
+        localeService.forget(uuid);
+        // ActiveMuteCache is only meant to hold entries for currently-connected players (chat-mute
+        // enforcement can't matter for someone who's offline); without this it grows unbounded for the
+        // life of the process, since a mute's entry otherwise only self-heals lazily on next chat.
+        activeMuteCache.clear(uuid);
     }
 
     private String ipOf(Player player) {

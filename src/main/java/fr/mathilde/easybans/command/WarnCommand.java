@@ -9,6 +9,7 @@ import fr.mathilde.easybans.message.MessageService;
 import fr.mathilde.easybans.message.PlaceholderContext;
 import fr.mathilde.easybans.message.PunishmentBroadcaster;
 import fr.mathilde.easybans.punishment.PunishmentService;
+import fr.mathilde.easybans.scope.ScopeResolver;
 import fr.mathilde.easybans.template.TemplateRegistry;
 import fr.mathilde.easybans.warning.WarningTriggerService;
 
@@ -21,16 +22,19 @@ public final class WarnCommand extends AbstractEasyBansCommand {
     private final PunishmentService punishmentService;
     private final WarningTriggerService triggerService;
     private final TemplateRegistry templateRegistry;
+    private final ScopeResolver scopeResolver;
     private final PunishmentBroadcaster broadcaster;
 
     public WarnCommand(ProxyServer proxy, MessageService messages, LocaleService localeService,
                         UuidResolver uuidResolver, OfflinePlayerCache offlinePlayerCache,
                         PunishmentService punishmentService, WarningTriggerService triggerService,
-                        TemplateRegistry templateRegistry, PunishmentBroadcaster broadcaster) {
+                        TemplateRegistry templateRegistry, ScopeResolver scopeResolver,
+                        PunishmentBroadcaster broadcaster) {
         super(proxy, messages, localeService, uuidResolver, offlinePlayerCache);
         this.punishmentService = punishmentService;
         this.triggerService = triggerService;
         this.templateRegistry = templateRegistry;
+        this.scopeResolver = scopeResolver;
         this.broadcaster = broadcaster;
     }
 
@@ -52,6 +56,11 @@ public final class WarnCommand extends AbstractEasyBansCommand {
             return;
         }
         ParsedFlags flags = CommandArgs.parseFlags(args, 2);
+        if (flags.server().isPresent() && !scopeResolver.isKnownServer(flags.server().get())) {
+            send(source, "errors.unknown-server");
+            return;
+        }
+        Optional<String> scope = scopeResolver.resolve(flags.server());
         boolean silent = flags.silent() && source.hasPermission(Permissions.SILENT);
         String reason = flags.remaining().isEmpty()
                 ? messages.getPlain(localeOf(source), "commands.default-reason")
@@ -62,14 +71,17 @@ public final class WarnCommand extends AbstractEasyBansCommand {
                 return;
             }
             punishmentService.warn(target, targetName, category, reason, staffUuidOf(source), staffNameOf(source),
-                    Optional.empty(), silent).thenAccept(warning -> {
+                    scope, silent).thenAccept(warning -> {
                 var ctx = PlaceholderContext.create()
                         .put("player", targetName)
                         .put("category", category)
                         .put("reason", reason)
+                        .put("staff", staffNameOf(source))
                         .build();
                 send(source, "commands.warn.success", ctx);
                 broadcaster.broadcast("commands.warn.broadcast", silent, ctx);
+                proxy.getPlayer(target).ifPresent(player ->
+                        player.sendMessage(messages.get(localeService.getCached(target), "commands.warn.notice", ctx)));
                 triggerService.onWarningIssued(target, targetName, category);
             });
         }));
@@ -84,6 +96,10 @@ public final class WarnCommand extends AbstractEasyBansCommand {
         if (args.length == 2) {
             String prefix = args[1].toLowerCase();
             return templateRegistry.categoryIds().stream().filter(c -> c.startsWith(prefix)).collect(Collectors.toList());
+        }
+        String currentToken = args[args.length - 1];
+        if (currentToken.startsWith("-")) {
+            return TabCompleteUtil.flags(currentToken, proxy, null, null, false);
         }
         return List.of();
     }

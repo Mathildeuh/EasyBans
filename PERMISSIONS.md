@@ -9,15 +9,16 @@ your permission plugin says otherwise.
 | Permission          | Grants                                                    |
 |----------------------|------------------------------------------------------------|
 | `easybans.ban`       | `/ban`                                                      |
-| `easybans.banip`     | `/banip`                                                    |
-| `easybans.unban`     | `/unban`                                                    |
+| `easybans.banip`     | `/banip` (alias: `/ban-ip`, the vanilla name)                |
+| `easybans.unban`     | `/unban` (alias: `/pardon`, the vanilla name), and `/pardon-ip <ip>` |
 | `easybans.mute`      | `/mute`                                                     |
 | `easybans.unmute`    | `/unmute`                                                   |
 | `easybans.warn`      | `/warn`                                                     |
 | `easybans.kick`      | `/kick`                                                     |
 | `easybans.note`      | `/note`                                                     |
-| `easybans.history`   | `/history <player>`                                         |
+| `easybans.history`   | `/history <player>`, and `/lookup <id>` (same sensitivity: viewing punishment detail) |
 | `easybans.staffhistory` | `/staffhistory <staff>`                                  |
+| `easybans.banlist`   | `/banlist [players\|ips]` (vanilla's own ban-listing command, replaced by EasyBans) |
 | `easybans.rollback`  | `/easybans rollback <staff>` and `/easybans rollback confirm` |
 | `easybans.import`    | `/easybans import <source> <location>`                      |
 | `easybans.allow`     | `/easybans allow <player> <ip>`                              |
@@ -47,3 +48,11 @@ your permission plugin says otherwise.
 - There is no `easybans.admin` umbrella node on purpose - grant the specific nodes each staff
   rank actually needs. Wildcard permission plugins (e.g. `easybans.*`) work fine if your
   permission plugin supports node globbing; EasyBans itself does not implement globbing.
+- EasyBans registers every vanilla ban-related command name (`ban`, `ban-ip`, `pardon`,
+  `pardon-ip`, `banlist`, `kick`) directly on the proxy. Velocity dispatches a command to
+  whichever layer has it registered first, so once EasyBans owns these names, typing them
+  anywhere routed through the proxy runs EasyBans, never the backend Paper/Spigot/Bukkit
+  server's own vanilla implementation. This only covers traffic that actually passes through
+  Velocity - an operator with direct console/RCON access to a backend server bypasses the
+  proxy entirely and can still trigger that server's own vanilla ban system; no proxy plugin
+  can intercept that.

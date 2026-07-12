@@ -36,11 +36,17 @@ public final class DurationParser {
         long totalSeconds = 0;
         int matchedChars = 0;
         boolean matchedAny = false;
-        while (matcher.find()) {
-            matchedAny = true;
-            matchedChars += matcher.group().length();
-            long amount = Long.parseLong(matcher.group(1));
-            totalSeconds = Math.addExact(totalSeconds, Math.multiplyExact(amount, unitSeconds(matcher.group(2))));
+        try {
+            while (matcher.find()) {
+                matchedAny = true;
+                matchedChars += matcher.group().length();
+                long amount = Long.parseLong(matcher.group(1));
+                totalSeconds = Math.addExact(totalSeconds, Math.multiplyExact(amount, unitSeconds(matcher.group(2))));
+            }
+        } catch (ArithmeticException e) {
+            // Absurdly large input (e.g. a 14-digit day count) - report it the same way as any other
+            // malformed duration instead of letting an unchecked ArithmeticException reach the caller.
+            throw new IllegalArgumentException("Duration is too large: '" + input + "'", e);
         }
 
         if (!matchedAny || matchedChars != trimmed.length()) {

@@ -39,19 +39,37 @@ public final class LocaleService {
         return resolved.getOrDefault(uuid, defaultLocale);
     }
 
-    /** Called on login: resolves and caches the effective locale for this player. */
+    /**
+     * Called on login: resolves and caches the effective locale for this player, and persists
+     * it to the {@code players} table the first time it's resolved (rather than only when the
+     * player explicitly runs {@code /easybans language}) - otherwise the choice only ever lived
+     * in this proxy instance's in-memory cache, invisible to other instances and to anything
+     * reading the database directly.
+     */
     public CompletableFuture<SupportedLocale> resolveOnLogin(Player player) {
-        return playerDao.findByUuid(player.getUniqueId()).thenApply(record -> {
-            Optional<SupportedLocale> persisted = record.flatMap(r -> r.locale().flatMap(SupportedLocale::fromCode));
-            SupportedLocale locale = persisted.orElseGet(() -> {
-                if (config.autoDetectLocale()) {
-                    return SupportedLocale.fromJavaLocale(player.getPlayerSettings().getLocale()).orElse(defaultLocale);
-                }
-                return defaultLocale;
-            });
-            resolved.put(player.getUniqueId(), locale);
-            return locale;
-        });
+        UUID uuid = player.getUniqueId();
+        String ip = player.getRemoteAddress().getAddress().getHostAddress();
+
+        // Ensures a players row exists before we try to persist a locale onto it - this runs at
+        // LoginEvent time, before the row-creating upsert in PostLoginEvent.
+        return playerDao.upsertOnJoin(uuid, player.getUsername(), ip)
+                .thenCompose(v -> playerDao.findByUuid(uuid))
+                .thenCompose(record -> {
+                    Optional<SupportedLocale> persisted = record.flatMap(r -> r.locale().flatMap(SupportedLocale::fromCode));
+                    if (persisted.isPresent()) {
+                        resolved.put(uuid, persisted.get());
+                        return CompletableFuture.completedFuture(persisted.get());
+                    }
+
+                    SupportedLocale detected = config.autoDetectLocale()
+                            ? SupportedLocale.fromJavaLocale(player.getPlayerSettings().getLocale()).orElse(defaultLocale)
+                            : defaultLocale;
+                    resolved.put(uuid, detected);
+                    return playerDao.setLocale(uuid, detected.code()).thenApply(v -> {
+                        syncService.publish(SyncEventType.LOCALE_CHANGED, uuid.toString());
+                        return detected;
+                    });
+                });
     }
 
     public void forget(UUID uuid) {

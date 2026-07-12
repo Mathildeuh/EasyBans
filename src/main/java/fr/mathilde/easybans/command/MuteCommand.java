@@ -70,7 +70,7 @@ public final class MuteCommand extends AbstractEasyBansCommand {
             if (flags.template().isPresent()) {
                 punishmentService.muteFromTemplate(target, targetName, flags.template().get(), staffUuid, staffName,
                                 scope, silent, bypassOverride)
-                        .thenAccept(result -> handleResult(source, targetName, result));
+                        .thenAccept(result -> handleResult(source, target, targetName, result));
                 return;
             }
 
@@ -83,11 +83,11 @@ public final class MuteCommand extends AbstractEasyBansCommand {
 
             punishmentService.mute(target, targetName, parsed.reason(), staffUuid, staffName, scope,
                             parsed.duration(), silent, bypassOverride)
-                    .thenAccept(result -> handleResult(source, targetName, result));
+                    .thenAccept(result -> handleResult(source, target, targetName, result));
         }));
     }
 
-    private void handleResult(CommandSource source, String targetName, PunishmentActionResult<Mute> result) {
+    private void handleResult(CommandSource source, UUID target, String targetName, PunishmentActionResult<Mute> result) {
         if (result.outcome() == PunishmentOutcome.ALREADY_PUNISHED) {
             send(source, "errors.already-muted", PlaceholderContext.create().put("player", targetName).build());
             return;
@@ -107,6 +107,12 @@ public final class MuteCommand extends AbstractEasyBansCommand {
 
         var broadcastCtx = PunishmentFormatter.of(mute, null, messages, locale).put("player", targetName);
         broadcaster.broadcast("commands.mute.broadcast", mute.silent(), broadcastCtx.build());
+
+        proxy.getPlayer(target).ifPresent(player -> {
+            var targetLocale = localeService.getCached(target);
+            var targetCtx = PunishmentFormatter.of(mute, null, messages, targetLocale).put("player", targetName);
+            player.sendMessage(messages.get(targetLocale, "commands.mute.notice", targetCtx.build()));
+        });
     }
 
     private String defaultReason(CommandSource source) {

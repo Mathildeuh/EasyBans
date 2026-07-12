@@ -20,7 +20,19 @@ public enum SyncMode {
         return switch (value.trim().toLowerCase()) {
             case "redis" -> REDIS;
             case "none", "off", "disabled" -> NONE;
+            case "database", "db" -> DATABASE;
             default -> DATABASE;
+        };
+    }
+
+    /** Whether {@code value} is one of the strings {@link #fromConfig} maps to something other than its default fallback. */
+    public static boolean isRecognized(String value) {
+        if (value == null) {
+            return true; // absent is a legitimate way to ask for the default
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "redis", "none", "off", "disabled", "database", "db" -> true;
+            default -> false;
         };
     }
 }

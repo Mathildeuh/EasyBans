@@ -1,6 +1,7 @@
 package fr.mathilde.easybans.config;
 
 import fr.mathilde.easybans.database.DatabaseType;
+import org.slf4j.Logger;
 
 public record StorageConfig(
         DatabaseType type,
@@ -15,9 +16,14 @@ public record StorageConfig(
         long connectionTimeoutMs,
         String h2FileName
 ) {
-    static StorageConfig fromYaml(YamlSection section) {
+    static StorageConfig fromYaml(YamlSection section, Logger logger) {
+        String rawType = section.getString("type", "h2");
+        if (!DatabaseType.isRecognized(rawType)) {
+            logger.warn("Unrecognized storage.type '{}' in config.yml - falling back to H2. "
+                    + "Valid values: h2, mysql, mariadb, postgresql.", rawType);
+        }
         return new StorageConfig(
-                DatabaseType.fromConfig(section.getString("type", "h2")),
+                DatabaseType.fromConfig(rawType),
                 section.getString("host", "localhost"),
                 section.getInt("port", 3306),
                 section.getString("database", "easybans"),

@@ -71,6 +71,20 @@ public final class KickCommand extends AbstractEasyBansCommand {
     }
 
     @Override
+    public List<String> suggest(Invocation invocation) {
+        String[] args = invocation.arguments();
+        if (args.length <= 1) {
+            // Kick requires the target to be online, so only suggest currently-connected players.
+            return TabCompleteUtil.onlinePlayers(proxy, args.length == 0 ? "" : args[0]);
+        }
+        String currentToken = args[args.length - 1];
+        if (currentToken.startsWith("-")) {
+            return TabCompleteUtil.flags(currentToken, proxy, null, null, false);
+        }
+        return List.of();
+    }
+
+    @Override
     public boolean hasPermission(Invocation invocation) {
         return invocation.source().hasPermission(Permissions.KICK);
     }

@@ -28,6 +28,7 @@ errors:
   not-banned: "<red><player> غير محظور حاليًا."
   not-muted: "<red><player> غير مكتوم حاليًا."
   unknown-category: "<red>فئة تحذير غير معروفة: <category>"
+  ip-not-banned: "<red>عنوان IP هذا غير محظور حاليًا: <white><ip>"
 
 notify:
   warning-received: "<yellow>لقد تلقيت تحذيرًا أثناء عدم اتصالك: <white><reason></white> <yellow>(<category>) - صادر عن <white><staff>"
@@ -80,6 +81,14 @@ commands:
     usage: "<red>الاستخدام: /unban <لاعب> [سبب...]"
     success: "<green>تم رفع الحظر عن <yellow><player></yellow>."
 
+  pardonip:
+    usage: "<red>الاستخدام: /pardon-ip <ip> [سبب...]"
+    success: "<green>تم رفع حظر IP عن <white><ip>"
+
+  banlist:
+    header: "<gold>الحظورات النشطة <gray>(صفحة <white><page></white>/<white><total_pages></white>، الإجمالي <white><total></white>)"
+    entry: "<gray>[#<id>] <white><target> <gray>- <white><reason> <gray>(بواسطة <white><staff></white>)"
+
   mute:
     usage: "<red>الاستخدام: /mute <لاعب> <مدة|سبب...> [-s] [-server:<اسم>] [-t:<قالب>]"
     success: "<green>تم كتم <yellow><player></yellow> بسبب <white><reason></white> (<white><duration></white>)."
@@ -94,6 +103,7 @@ commands:
     usage: "<red>الاستخدام: /warn <لاعب> <فئة> <سبب...>"
     success: "<green>تم تحذير <yellow><player></yellow> (<white><category></white>): <white><reason>"
     broadcast: "<yellow><player> <gray>تم تحذيره بواسطة <white><staff> <gray>(<white><reason></white>)"
+    notice: "<yellow>لقد تلقيت تحذيرًا <gray>(<white><category></white>)<yellow>: <white><reason></white> <gray>- بواسطة <white><staff>"
 
   kick:
     usage: "<red>الاستخدام: /kick <لاعب> <سبب...> [-server:<اسم>]"
@@ -112,6 +122,11 @@ commands:
   staffhistory:
     usage: "<red>الاستخدام: /staffhistory <staff> [صفحة]"
     header: "<gold>العقوبات الصادرة عن <white><staff></white> <gray>(صفحة <white><page></white>/<white><total_pages></white>، الإجمالي <white><total></white>)"
+
+  lookup:
+    usage: "<red>الاستخدام: /lookup <id>"
+    not-found: "<red>لم يتم العثور على عقوبة بالمعرف #<id>"
+    entry: "<gray>[<white><type></white>#<id>] <white><target> <gray>| الطاقم: <white><staff></white> <gray>| النطاق: <white><scope></white> <gray>| الحالة: <white><status></white>\n<gray>السبب: <white><reason></white>\n<gray>التاريخ: <white><original_date></white> <gray>| المدة: <white><duration>"
 
   easybans:
     version: "<gray>إصدار EasyBans: <white><version>"

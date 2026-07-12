@@ -24,6 +24,7 @@ errors:
   not-banned: "<red><player> ist aktuell nicht gesperrt."
   not-muted: "<red><player> ist aktuell nicht stummgeschaltet."
   unknown-category: "<red>Unbekannte Verwarnungskategorie: <category>"
+  ip-not-banned: "<red>Diese IP ist aktuell nicht gesperrt: <white><ip>"
 
 notify:
   warning-received: "<yellow>Du hast eine Verwarnung erhalten, während du offline warst: <white><reason></white> <yellow>(<category>) - erteilt von <white><staff>"
@@ -76,6 +77,14 @@ commands:
     usage: "<red>Verwendung: /unban <spieler> [grund...]"
     success: "<green><yellow><player></yellow> entsperrt."
 
+  pardonip:
+    usage: "<red>Verwendung: /pardon-ip <ip> [grund...]"
+    success: "<green>IP-Sperre für <white><ip> <green>aufgehoben"
+
+  banlist:
+    header: "<gold>Aktive Sperren <gray>(Seite <white><page></white>/<white><total_pages></white>, <white><total></white> insgesamt)"
+    entry: "<gray>[#<id>] <white><target> <gray>- <white><reason> <gray>(von <white><staff></white>)"
+
   mute:
     usage: "<red>Verwendung: /mute <spieler> <dauer|grund...> [-s] [-server:<name>] [-t:<template>]"
     success: "<green><yellow><player></yellow> stummgeschaltet für <white><reason></white> (<white><duration></white>)."
@@ -90,6 +99,7 @@ commands:
     usage: "<red>Verwendung: /warn <spieler> <kategorie> <grund...>"
     success: "<green><yellow><player></yellow> verwarnt (<white><category></white>): <white><reason>"
     broadcast: "<yellow><player> <gray>wurde von <white><staff> <gray>verwarnt (<white><reason></white>)"
+    notice: "<yellow>Du wurdest verwarnt <gray>(<white><category></white>)<yellow>: <white><reason></white> <gray>- von <white><staff>"
 
   kick:
     usage: "<red>Verwendung: /kick <spieler> <grund...> [-server:<name>]"
@@ -108,6 +118,11 @@ commands:
   staffhistory:
     usage: "<red>Verwendung: /staffhistory <team> [seite]"
     header: "<gold>Strafen erteilt von <white><staff></white> <gray>(Seite <white><page></white>/<white><total_pages></white>, <white><total></white> insgesamt)"
+
+  lookup:
+    usage: "<red>Verwendung: /lookup <id>"
+    not-found: "<red>Keine Strafe mit der ID #<id> gefunden"
+    entry: "<gray>[<white><type></white>#<id>] <white><target> <gray>| Team: <white><staff></white> <gray>| Bereich: <white><scope></white> <gray>| Status: <white><status></white>\n<gray>Grund: <white><reason></white>\n<gray>Datum: <white><original_date></white> <gray>| Dauer: <white><duration>"
 
   easybans:
     version: "<gray>EasyBans Version <white><version>"

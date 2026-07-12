@@ -40,8 +40,18 @@ public final class OfflinePlayerCache {
     }
 
     public void put(UUID uuid, String name) {
+        byte[] previous;
         synchronized (uuidToName) {
-            uuidToName.put(uuid, encode(name));
+            previous = uuidToName.put(uuid, encode(name));
+        }
+        // A rename (same uuid, different name than what was cached before) must drop the stale
+        // nameToUuid entry - otherwise it never gets cleaned up (re-putting an existing key doesn't
+        // grow the map, so LRU eviction never triggers for it) and leaks for the life of the process.
+        if (previous != null) {
+            String previousName = decode(previous).toLowerCase(Locale.ROOT);
+            if (!previousName.equals(name.toLowerCase(Locale.ROOT))) {
+                nameToUuid.remove(previousName);
+            }
         }
         nameToUuid.put(name.toLowerCase(Locale.ROOT), uuid);
     }
