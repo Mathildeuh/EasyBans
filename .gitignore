@@ -18,3 +18,4 @@ hs_err_pid*
 
 # Common working directory for local Velocity test servers
 run/
+/com/
