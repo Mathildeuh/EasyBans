@@ -24,11 +24,17 @@ proxy plugin.
 - A Velocity 4.0.0(-SNAPSHOT) proxy
 - Nothing else for a single-proxy setup with the default H2 storage. MySQL/MariaDB/PostgreSQL
   and Redis are supported but optional - see CONFIG.md.
-- **For mutes on 1.19.1+ clients**, install [SignedVelocity](https://github.com/4drian3d/SignedVelocity)
-  on the proxy *and* on every backend server. Without it, cancelling a signed chat message to
-  enforce a mute can desync the client's chat-signature chain (unsecure-chat warnings, or a
-  disconnect on servers enforcing secure profiles). SignedVelocity needs no configuration or
-  API integration from EasyBans - it just needs to be present.
+- **For chat mutes to actually block chat**, EasyBans grants a network-wide LuckPerms permission
+  node (`easybans.muted`, see `mute/MuteNetworkSync.java`) that the backend server checks and
+  enforces itself, rather than trying to cancel Velocity's `PlayerChatEvent` (which can't safely
+  block *signed* 1.19.1+ chat without a companion plugin on every server, and that companion
+  plugin's own "remove unsecure chat warning" feature in turn breaks chat for cracked players -
+  not viable on a mixed cracked/premium network). Requires LuckPerms on a *shared* storage backend
+  (MySQL/MariaDB or Redis) so the permission node is visible to both the proxy and the backend -
+  LuckPerms on SQLite/H2-per-instance will not propagate it. The backend must also implement the
+  actual chat-blocking check itself (see `TiroirSurvival`'s `ChatFilterService`); EasyBans only
+  grants the permission and relays the mute reason over a plugin message channel
+  (`easybans:mute`) for display.
 
 ## Installation
 

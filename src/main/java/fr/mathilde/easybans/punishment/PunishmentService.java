@@ -2,6 +2,7 @@ package fr.mathilde.easybans.punishment;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.server.RegisteredServer;
 import fr.mathilde.easybans.cache.ActiveMuteCache;
 import fr.mathilde.easybans.config.GeneralConfig;
 import fr.mathilde.easybans.database.dao.PunishmentDao;
@@ -9,6 +10,7 @@ import fr.mathilde.easybans.discord.DiscordWebhookService;
 import fr.mathilde.easybans.kickscreen.KickScreenRenderer;
 import fr.mathilde.easybans.locale.LocaleService;
 import fr.mathilde.easybans.locale.SupportedLocale;
+import fr.mathilde.easybans.mute.MuteNetworkSync;
 import fr.mathilde.easybans.sync.SyncEventType;
 import fr.mathilde.easybans.sync.SyncService;
 import fr.mathilde.easybans.template.PunishmentTemplate;
@@ -42,12 +44,14 @@ public final class PunishmentService {
     private final LocaleService localeService;
     private final GeneralConfig generalConfig;
     private final ActiveMuteCache activeMuteCache;
+    private final MuteNetworkSync muteNetworkSync;
     private final Logger logger;
 
     public PunishmentService(ProxyServer proxy, PunishmentDao dao, TemplateRegistry templateRegistry,
                               SyncService syncService, DiscordWebhookService discord,
                               KickScreenRenderer kickScreenRenderer, LocaleService localeService,
-                              GeneralConfig generalConfig, ActiveMuteCache activeMuteCache, Logger logger) {
+                              GeneralConfig generalConfig, ActiveMuteCache activeMuteCache,
+                              MuteNetworkSync muteNetworkSync, Logger logger) {
         this.proxy = proxy;
         this.dao = dao;
         this.templateRegistry = templateRegistry;
@@ -57,6 +61,7 @@ public final class PunishmentService {
         this.localeService = localeService;
         this.generalConfig = generalConfig;
         this.activeMuteCache = activeMuteCache;
+        this.muteNetworkSync = muteNetworkSync;
         this.logger = logger;
     }
 
@@ -262,6 +267,7 @@ public final class PunishmentService {
 
     private void afterMuteCreated(Mute mute, String targetName) {
         activeMuteCache.put(mute.targetUuid(), mute);
+        muteNetworkSync.applyMute(mute);
         syncService.publish(SyncEventType.PUNISHMENT_CHANGED, mute.targetUuid().toString());
         discord.notifyMute(mute, targetName);
     }
@@ -274,6 +280,7 @@ public final class PunishmentService {
             }
             return dao.deactivate(existing.get().id(), staffUuid, staffName, reason).thenApply(ok -> {
                 activeMuteCache.clear(target);
+                muteNetworkSync.clearMute(target);
                 syncService.publish(SyncEventType.PUNISHMENT_CHANGED, target.toString());
                 RemovalInfo removal = new RemovalInfo(staffUuid, staffName, Instant.now(), reason);
                 discord.notifyUnmute(existing.get(), targetName, removal);
@@ -286,10 +293,41 @@ public final class PunishmentService {
         return dao.findActiveMute(target, serverName);
     }
 
-    /** Re-reads active ban/mute state from the database and refreshes in-memory caches for an online player. */
+    /**
+     * Re-reads active ban/mute state from the database and refreshes in-memory caches for an online
+     * player. Used by the cross-instance sync listener, where only a server name is known (the
+     * player is in steady state there, not mid-connect, so re-deriving the connection via {@code
+     * Player#getCurrentServer()} inside {@link MuteNetworkSync#sendMuteInfo(UUID, Optional)} is
+     * fine).
+     */
     public void refreshOnlineStatus(UUID target, String serverName) {
-        dao.findActiveMute(target, serverName).thenAccept(muteOpt ->
-                muteOpt.ifPresentOrElse(mute -> activeMuteCache.put(target, mute), () -> activeMuteCache.clear(target)));
+        refreshOnlineStatus(target, serverName, null);
+    }
+
+    /**
+     * Same, but for {@code ConnectionListener#onServerConnected}, which already has the {@code
+     * RegisteredServer} in hand from the event. Deliberately routed through {@code
+     * MuteNetworkSync#sendMuteInfo(UUID, Optional, RegisteredServer)} instead of the
+     * server-name-only overload above: {@code Player#getCurrentServer()} is not reliably populated
+     * yet while this exact event's own subscribers are still running (observed on Velocity-CTD),
+     * which used to make the mute resync silently no-op right after every reconnect.
+     */
+    public void refreshOnlineStatus(UUID target, RegisteredServer server) {
+        refreshOnlineStatus(target, server.getServerInfo().getName(), server);
+    }
+
+    private void refreshOnlineStatus(UUID target, String serverName, RegisteredServer knownServer) {
+        dao.findActiveMute(target, serverName).thenAccept(muteOpt -> {
+            muteOpt.ifPresentOrElse(mute -> activeMuteCache.put(target, mute), () -> activeMuteCache.clear(target));
+            // Réémet la raison vers le backend qu'on vient de rejoindre : couvre un backend qui aurait
+            // redémarré (perdant son cache en mémoire du côté Tiroir-Survival) ou une reconnexion, sans
+            // que ce backend ait besoin d'interroger lui-même la base de données.
+            if (knownServer != null) {
+                muteNetworkSync.sendMuteInfo(target, muteOpt, knownServer);
+            } else {
+                muteNetworkSync.sendMuteInfo(target, muteOpt);
+            }
+        });
         dao.findActiveBan(target, serverName).thenAccept(banOpt -> banOpt.ifPresent(ban ->
                 proxy.getPlayer(target).ifPresent(player -> disconnectWithBanScreen(player, ban))));
     }

@@ -5,11 +5,13 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.cache.UuidResolver;
+import fr.mathilde.easybans.database.dao.PlayerDao;
 import fr.mathilde.easybans.locale.LocaleService;
 import fr.mathilde.easybans.message.MessageService;
 import fr.mathilde.easybans.message.PlaceholderContext;
 import fr.mathilde.easybans.message.PunishmentBroadcaster;
 import fr.mathilde.easybans.message.PunishmentFormatter;
+import fr.mathilde.easybans.player.PlayerRecord;
 import fr.mathilde.easybans.punishment.Ban;
 import fr.mathilde.easybans.punishment.PunishmentActionResult;
 import fr.mathilde.easybans.punishment.PunishmentOutcome;
@@ -21,6 +23,7 @@ import fr.mathilde.easybans.template.TemplateRegistry;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /** Backs both {@code /ban} and {@code /banip} - the only difference is whether the player's current IP is banned too. */
 public final class BanCommand extends AbstractEasyBansCommand {
@@ -29,17 +32,19 @@ public final class BanCommand extends AbstractEasyBansCommand {
     private final ScopeResolver scopeResolver;
     private final PunishmentBroadcaster broadcaster;
     private final TemplateRegistry templateRegistry;
+    private final PlayerDao playerDao;
     private final boolean ipMode;
 
     public BanCommand(ProxyServer proxy, MessageService messages, LocaleService localeService, UuidResolver uuidResolver,
                        OfflinePlayerCache offlinePlayerCache, PunishmentService punishmentService,
                        ScopeResolver scopeResolver, PunishmentBroadcaster broadcaster, TemplateRegistry templateRegistry,
-                       boolean ipMode) {
+                       PlayerDao playerDao, boolean ipMode) {
         super(proxy, messages, localeService, uuidResolver, offlinePlayerCache);
         this.punishmentService = punishmentService;
         this.scopeResolver = scopeResolver;
         this.broadcaster = broadcaster;
         this.templateRegistry = templateRegistry;
+        this.playerDao = playerDao;
         this.ipMode = ipMode;
     }
 
@@ -74,36 +79,45 @@ public final class BanCommand extends AbstractEasyBansCommand {
                 return;
             }
 
-            Optional<String> ip = ipMode ? currentIpOf(target) : Optional.empty();
-            if (ipMode && ip.isEmpty()) {
-                send(source, "errors.player-never-joined");
-                return;
-            }
+            resolveIp(target).thenAccept(ip -> {
+                if (ipMode && ip.isEmpty()) {
+                    send(source, "errors.player-never-joined");
+                    return;
+                }
 
-            if (flags.template().isPresent()) {
-                punishmentService.banFromTemplate(target, targetName, ip, ipMode, flags.template().get(), staffUuid,
-                                staffName, scope, silent, bypassOverride)
+                if (flags.template().isPresent()) {
+                    punishmentService.banFromTemplate(target, targetName, ip, ipMode, flags.template().get(), staffUuid,
+                                    staffName, scope, silent, bypassOverride)
+                            .thenAccept(result -> handleResult(source, targetName, result));
+                    return;
+                }
+
+                List<String> remaining = flags.remaining();
+                if (remaining.isEmpty()) {
+                    send(source, ipMode ? "commands.banip.usage" : "commands.ban.usage");
+                    return;
+                }
+                CommandArgs.DurationAndReason parsed = CommandArgs.parseDurationAndReason(remaining, defaultReason(source));
+
+                punishmentService.ban(target, targetName, ip, ipMode, parsed.reason(), staffUuid, staffName, scope,
+                                parsed.duration(), silent, bypassOverride)
                         .thenAccept(result -> handleResult(source, targetName, result));
-                return;
-            }
-
-            List<String> remaining = flags.remaining();
-            if (remaining.isEmpty()) {
-                send(source, ipMode ? "commands.banip.usage" : "commands.ban.usage");
-                return;
-            }
-            CommandArgs.DurationAndReason parsed = CommandArgs.parseDurationAndReason(remaining, defaultReason(source));
-
-            punishmentService.ban(target, targetName, ip, ipMode, parsed.reason(), staffUuid, staffName, scope,
-                            parsed.duration(), silent, bypassOverride)
-                    .thenAccept(result -> handleResult(source, targetName, result));
+            });
         }));
     }
 
-    private Optional<String> currentIpOf(UUID target) {
-        return proxy.getPlayer(target)
+    /** The target's current session IP if online, falling back to their last known IP on record. */
+    private CompletableFuture<Optional<String>> resolveIp(UUID target) {
+        if (!ipMode) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+        Optional<String> online = proxy.getPlayer(target)
                 .map(Player::getRemoteAddress)
                 .map(addr -> addr.getAddress().getHostAddress());
+        if (online.isPresent()) {
+            return CompletableFuture.completedFuture(online);
+        }
+        return playerDao.findByUuid(target).thenApply(opt -> opt.flatMap(PlayerRecord::lastIp));
     }
 
     private void handleResult(CommandSource source, String targetName, PunishmentActionResult<Ban> result) {

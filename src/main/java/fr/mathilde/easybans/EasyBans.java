@@ -6,6 +6,8 @@ import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
+import fr.mathilde.easybans.bridge.StaffBridgeListener;
+import fr.mathilde.easybans.bridge.StaffBridgeProtocol;
 import fr.mathilde.easybans.cache.ActiveMuteCache;
 import fr.mathilde.easybans.cache.OfflinePlayerCache;
 import fr.mathilde.easybans.cache.UuidResolver;
@@ -41,6 +43,7 @@ import fr.mathilde.easybans.listener.ConnectionListener;
 import fr.mathilde.easybans.locale.LocaleService;
 import fr.mathilde.easybans.message.MessageService;
 import fr.mathilde.easybans.message.PunishmentBroadcaster;
+import fr.mathilde.easybans.mute.MuteNetworkSync;
 import fr.mathilde.easybans.punishment.PunishmentService;
 import fr.mathilde.easybans.rollback.RollbackService;
 import fr.mathilde.easybans.scope.ScopeResolver;
@@ -113,8 +116,9 @@ public class EasyBans {
         KickScreenRenderer kickScreenRenderer = new KickScreenRenderer(messageService);
         DiscordWebhookService discord = new DiscordWebhookService(config.discord(), databaseProvider.executor(), logger);
 
+        MuteNetworkSync muteNetworkSync = new MuteNetworkSync(proxy, this, logger);
         punishmentService = new PunishmentService(proxy, punishmentDao, templateRegistry, syncService, discord,
-                kickScreenRenderer, localeService, config.general(), activeMuteCache, logger);
+                kickScreenRenderer, localeService, config.general(), activeMuteCache, muteNetworkSync, logger);
         HistoryService historyService = new HistoryService(punishmentDao);
         RollbackService rollbackService = new RollbackService(punishmentDao);
         WarningTriggerService warningTriggerService = new WarningTriggerService(proxy, templateRegistry, punishmentDao, logger);
@@ -130,7 +134,7 @@ public class EasyBans {
         registerListeners(punishmentDao, ipExemptionDao, ipHistoryDao, playerDao, linkedAccountService,
                 offlinePlayerCache, activeMuteCache, messageService);
         registerCommands(uuidResolver, offlinePlayerCache, punishmentService, historyService, rollbackService,
-                warningTriggerService, scopeResolver, broadcaster, ipExemptionDao);
+                warningTriggerService, scopeResolver, broadcaster, ipExemptionDao, playerDao);
 
         logger.info("EasyBans enabled ({} storage, {} sync)", config.storage().type(), config.sync().mode());
     }
@@ -172,13 +176,19 @@ public class EasyBans {
 
         ChatMuteListener chatMuteListener = new ChatMuteListener(activeMuteCache, messages, localeService);
         proxy.getEventManager().register(this, chatMuteListener);
+
+        // /staffmode bridge (Tiroir-Survival, Paper backend) - registration is required for the proxy
+        // to receive plugin messages sent FROM a backend at all, see StaffBridgeProtocol's javadoc.
+        proxy.getChannelRegistrar().register(StaffBridgeProtocol.ACTION_CHANNEL);
+        proxy.getChannelRegistrar().register(StaffBridgeProtocol.QUERY_CHANNEL);
+        proxy.getEventManager().register(this, new StaffBridgeListener(proxy, templateRegistry, logger));
     }
 
     private void registerCommands(UuidResolver uuidResolver, OfflinePlayerCache offlinePlayerCache,
                                    PunishmentService punishmentService, HistoryService historyService,
                                    RollbackService rollbackService, WarningTriggerService warningTriggerService,
                                    ScopeResolver scopeResolver, PunishmentBroadcaster broadcaster,
-                                   IpExemptionDao ipExemptionDao) {
+                                   IpExemptionDao ipExemptionDao, PlayerDao playerDao) {
         var commandManager = proxy.getCommandManager();
 
         commandManager.register(commandManager.metaBuilder("easybans").build(),
@@ -189,10 +199,10 @@ public class EasyBans {
         // here instead of forwarding to the backend Paper/Spigot/Bukkit server's own vanilla ban system.
         commandManager.register(commandManager.metaBuilder("ban").build(),
                 new BanCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
-                        punishmentService, scopeResolver, broadcaster, templateRegistry, false));
+                        punishmentService, scopeResolver, broadcaster, templateRegistry, playerDao, false));
         commandManager.register(commandManager.metaBuilder("banip").aliases("ban-ip").build(),
                 new BanCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache,
-                        punishmentService, scopeResolver, broadcaster, templateRegistry, true));
+                        punishmentService, scopeResolver, broadcaster, templateRegistry, playerDao, true));
         commandManager.register(commandManager.metaBuilder("unban").aliases("pardon").build(),
                 new UnbanCommand(proxy, messageService, localeService, uuidResolver, offlinePlayerCache, punishmentService));
         commandManager.register(commandManager.metaBuilder("pardon-ip").build(),

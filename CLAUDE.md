@@ -60,5 +60,7 @@ Single test class: `./gradlew test --tests "fr.mathilde.easybans.punishment.Dura
 - The Velocity API dependency is `compileOnly` (plus `testImplementation` for unit tests that
   touch Adventure/MiniMessage types) - it's provided by the proxy at runtime and must never be
   shaded into the jar.
-- Chat-based mute enforcement requires the separate SignedVelocity plugin on 1.19.1+ clients -
-  see README.md's installation note and ARCHITECTURE.md.
+- Chat-based mute enforcement is done backend-side via a network-wide LuckPerms permission node
+  (`easybans.muted`, granted/revoked by `mute/MuteNetworkSync.java`), not by cancelling Velocity's
+  `PlayerChatEvent` - see README.md's installation note and ARCHITECTURE.md. Requires LuckPerms on
+  a shared storage backend (MySQL/MariaDB or Redis, not SQLite/H2-per-instance).

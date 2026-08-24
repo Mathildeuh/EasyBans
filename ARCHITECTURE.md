@@ -135,15 +135,39 @@ operator explicitly opts in.
   Active *ban* status isn't cached the same way because it's only checked at connection time
   (login, server switch), which is already async and infrequent per player.
 
-## Chat mutes require SignedVelocity on 1.19.1+
+## Chat mutes are enforced backend-side via a LuckPerms permission node, not `PlayerChatEvent`
 
-Velocity's `PlayerChatEvent` can be cancelled to enforce a mute, but since chat signing was
-introduced, cancelling a signed message without informing the backend server desyncs the
-client's signature chain (unsecure-chat warnings, or a disconnect on servers that enforce
-secure profiles). [SignedVelocity](https://github.com/4drian3d/SignedVelocity) fixes this at
-the protocol level and needs no API integration from EasyBans - just presence on the proxy and
-every backend server. This is a deployment requirement, documented in README.md, not something
-EasyBans can work around in its own code.
+An earlier version cancelled Velocity's `PlayerChatEvent` to enforce a mute
+(`ChatMuteListener.onChat`, now removed). Since chat signing was introduced in 1.19.1, cancelling
+a *signed* message without informing the backend desyncs the client's signature chain
+(unsecure-chat warnings, or a disconnect on servers enforcing secure profiles). The documented
+fix was [SignedVelocity](https://github.com/4drian3d/SignedVelocity) - but that plugin's own
+optional "remove unsecure chat warning" feature (PacketEvents/VPacketEvents) unconditionally
+forces `enforcesSecureChat` on the client's JoinGame packet, which breaks chat entirely for
+*cracked* players (they have no signing key at all to satisfy that requirement). Not viable on
+a mixed cracked/premium network, which is what this proxy serves.
+
+Instead, `mute/MuteNetworkSync.java` sends the mute reason/expiry to whichever backend the target
+is currently connected to over a plugin message channel (`easybans:mute`), synchronously at the
+moment `/mute`/`/unmute` runs (and again on every reconnect/server-switch, so a backend that
+restarted still recovers it). The backend enforces the mute itself, backend-side, using ONLY this
+message (cached in `TiroirSurvival`'s `MuteSyncCache`, with expiry checked locally by comparing
+timestamps - no dependency on LuckPerms' cross-instance sync timing for the actual block) and
+cancels its own native chat event (see `ChatFilterService`); because that cancellation never
+round-trips back through the proxy, it never touches the signed-chat chain at all, regardless of
+whether the muted player is signed (premium) or not (cracked). `ChatMuteListener` still exists,
+but only to block chat-adjacent bypass commands (`/msg`, `/tell`, `/w`, `/me`) - a different,
+unrelated concern from chat itself.
+
+`MuteNetworkSync` *also* grants/revokes a network-wide LuckPerms permission node
+(`easybans.muted`) in parallel, kept for other systems that may want to check "is this player
+muted" (e.g. a scoreboard tag) and for LuckPerms' own auditing - but it is **not** what gates
+chat, specifically because its propagation from proxy to backend depends on LuckPerms' configured
+messaging service and isn't necessarily instant (observed in practice: mute/unmute could take
+several seconds to minutes to take effect when only the permission was checked). If a backend
+other than `TiroirSurvival` needs the same enforcement, it must
+implement its own `easybans.muted` check and consume the same plugin message format - this isn't
+generic yet, it was built for one backend (see the note in README.md if that changes).
 
 ## Importers: honest about format variance
 

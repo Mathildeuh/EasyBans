@@ -146,7 +146,10 @@ public final class ConnectionListener {
 
     @Subscribe
     public void onServerConnected(ServerConnectedEvent event) {
-        punishmentService.refreshOnlineStatus(event.getPlayer().getUniqueId(), event.getServer().getServerInfo().getName());
+        // Pass the RegisteredServer straight from the event rather than the (UUID, String) overload,
+        // which would re-derive it via Player#getCurrentServer() - not reliably populated yet on at
+        // least one Velocity fork while this exact event's subscribers are still running.
+        punishmentService.refreshOnlineStatus(event.getPlayer().getUniqueId(), event.getServer());
     }
 
     @Subscribe

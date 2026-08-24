@@ -1,7 +1,8 @@
 package fr.mathilde.easybans.listener;
 
+import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
-import com.velocitypowered.api.event.player.PlayerChatEvent;
+import com.velocitypowered.api.event.command.CommandExecuteEvent;
 import com.velocitypowered.api.proxy.Player;
 import fr.mathilde.easybans.cache.ActiveMuteCache;
 import fr.mathilde.easybans.locale.LocaleService;
@@ -10,23 +11,24 @@ import fr.mathilde.easybans.message.PunishmentFormatter;
 import fr.mathilde.easybans.punishment.Mute;
 import net.kyori.adventure.text.Component;
 
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Enforces mutes at chat time using {@link ActiveMuteCache} (never a database query per
- * message - see the cache's javadoc). Mute enforcement only works for chat routed through the
- * proxy (Velocity's {@code PlayerChatEvent}); it cannot see chat handled entirely backend-side
- * by a server that doesn't forward it - see ARCHITECTURE.md.
- *
- * <p><b>Requires SignedVelocity on 1.19.1+ clients.</b> Since chat signing was introduced,
- * cancelling {@code PlayerChatEvent} on the proxy without also informing the backend server
- * desyncs the client's signed-chat chain, which can produce "unsecure chat" warnings or, on
- * servers enforcing secure profiles, disconnect the player entirely. Installing
- * <a href="https://github.com/4drian3d/SignedVelocity">SignedVelocity</a> on the proxy AND on
- * every backend server fixes this - it requires no API integration from EasyBans itself, it
- * just needs to be present. See README.md for the installation note.
+ * Restricts a muted player's use of chat-adjacent bypass commands ({@code /msg}, {@code /tell},
+ * {@code /w}, {@code /me}). Actual chat blocking no longer happens here: cancelling Velocity's
+ * {@code PlayerChatEvent} without a companion plugin (SignedVelocity) desyncs the 1.19.1+
+ * signed-chat chain, and SignedVelocity's own "remove unsecure chat warning" feature breaks chat
+ * entirely for cracked players (see ARCHITECTURE.md). Chat is now blocked backend-side instead,
+ * via the network-wide LuckPerms permission node - see {@link fr.mathilde.easybans.mute.MuteNetworkSync}
+ * and {@code TiroirSurvival}'s {@code ChatFilterService}. This listener used to also deny
+ * {@code PlayerChatEvent} and send the same notice, which duplicated the message the backend now
+ * sends on its own - removed for that reason, not just as a cleanup.
  */
 public final class ChatMuteListener {
+
+    private static final Set<String> MUTE_BYPASS_ROOT_COMMANDS = Set.of("msg", "tell", "w", "me");
 
     private final ActiveMuteCache activeMuteCache;
     private final MessageService messages;
@@ -38,19 +40,36 @@ public final class ChatMuteListener {
         this.localeService = localeService;
     }
 
-    @Subscribe
-    @SuppressWarnings("deprecation") // setResult(denied) is deprecated by Velocity precisely because of the
-    // 1.19.1+ signed-chat interaction documented above - SignedVelocity is the documented fix, not a code change.
-    public void onChat(PlayerChatEvent event) {
-        Player player = event.getPlayer();
+    @Subscribe(order = PostOrder.LAST)
+    public void onCommandExecute(CommandExecuteEvent event) {
+        if (!(event.getCommandSource() instanceof Player player)) {
+            return;
+        }
         Optional<Mute> mute = activeMuteCache.get(player.getUniqueId());
         if (mute.isEmpty()) {
             return;
         }
-        event.setResult(PlayerChatEvent.ChatResult.denied());
+        if (!MUTE_BYPASS_ROOT_COMMANDS.contains(rootCommand(event.getCommand()))) {
+            return;
+        }
+        event.setResult(CommandExecuteEvent.CommandResult.denied());
+        sendMuteNotice(player, mute.get());
+    }
+
+    private void sendMuteNotice(Player player, Mute mute) {
         var locale = localeService.getCached(player.getUniqueId());
         Component notice = messages.get(locale, "commands.mute.notice",
-                PunishmentFormatter.of(mute.get(), null, messages, locale).build());
+                PunishmentFormatter.of(mute, null, messages, locale).build());
         player.sendMessage(notice);
+    }
+
+    private static String rootCommand(String commandLine) {
+        if (commandLine == null || commandLine.isBlank()) {
+            return "";
+        }
+        String trimmed = commandLine.stripLeading();
+        int space = trimmed.indexOf(' ');
+        String root = space < 0 ? trimmed : trimmed.substring(0, space);
+        return root.toLowerCase(Locale.ROOT);
     }
 }

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.util.UuidUtils;
 import fr.mathilde.easybans.database.dao.PlayerDao;
 import org.slf4j.Logger;
 
@@ -19,9 +20,13 @@ import java.util.concurrent.Executor;
 
 /**
  * Resolves a player name to a UUID (and back) through, in order: currently-online players,
- * the in-memory offline cache, the local {@code players} table, and finally the Mojang API for
- * a player who has never joined this network before. Every layer that succeeds populates the
- * cheaper layers above it.
+ * the in-memory offline cache, the local {@code players} table, and finally - for a player who
+ * has never joined this network before - either the Mojang API (online-mode proxy) or the
+ * standard offline-UUID formula (offline-mode proxy). Querying Mojang while the proxy runs in
+ * offline mode would resolve to that name's premium UUID, which never matches the offline UUID
+ * Velocity actually assigns connecting players, silently breaking UUID-keyed lookups (e.g. mute
+ * enforcement) for any punishment issued against a not-yet-seen name. Every layer that succeeds
+ * populates the cheaper layers above it.
  */
 public final class UuidResolver {
 
@@ -59,8 +64,17 @@ public final class UuidResolver {
                 cache.put(dbRecord.get().uuid(), dbRecord.get().name());
                 return CompletableFuture.completedFuture(Optional.of(dbRecord.get().uuid()));
             }
+            if (!proxy.getConfiguration().isOnlineMode()) {
+                return CompletableFuture.completedFuture(Optional.of(resolveOffline(name)));
+            }
             return resolveViaMojang(name);
         });
+    }
+
+    private UUID resolveOffline(String name) {
+        UUID uuid = UuidUtils.generateOfflinePlayerUuid(name);
+        cache.put(uuid, name);
+        return uuid;
     }
 
     public CompletableFuture<Optional<String>> resolveName(UUID uuid) {

@@ -16,6 +16,12 @@ dependencies {
     // Velocity platform API - provided by the proxy at runtime, never shaded
     compileOnly("com.velocitypowered:velocity-api:$velocityVersion")
 
+    // LuckPerms API - provided by the LuckPerms plugin at runtime, never shaded. Used to grant/
+    // revoke the "easybans.muted" network-wide permission node (see mute/MuteNetworkSync.java) -
+    // the source of truth backends check instead of relying on Velocity's PlayerChatEvent, which
+    // can't safely cancel signed (1.19.1+) chat without a companion plugin on every server.
+    compileOnly("net.luckperms:api:5.5")
+
     // Connection pooling
     implementation("com.zaxxer:HikariCP:5.1.0")
 
